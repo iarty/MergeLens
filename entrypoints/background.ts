@@ -16,6 +16,12 @@ export default defineBackground(() => {
     return getPullRequestToolbarData(data);
   });
 
+  onMessage('openOptionsPage', async () => {
+    logger.info('Opening MergeLens options page');
+    await browser.runtime.openOptionsPage();
+    return { status: 'success' };
+  });
+
   logger.info('MergeLens background listeners registered', {
     extensionId: browser.runtime.id,
   });

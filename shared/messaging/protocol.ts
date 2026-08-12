@@ -3,6 +3,7 @@ import { createLogger } from '@/shared/logging/logger';
 import {
   toolbarRequestSchema,
   toolbarResponseSchema,
+  type OpenOptionsPageResponse,
   type ToolbarRequest,
   type ToolbarResponse,
 } from './schemas';
@@ -11,6 +12,7 @@ const logger = createLogger('messaging');
 
 export interface MergeLensProtocolMap {
   getPullRequestToolbarData(data: ToolbarRequest): ToolbarResponse;
+  openOptionsPage(): OpenOptionsPageResponse;
 }
 
 export const { onMessage, removeAllListeners, sendMessage } =

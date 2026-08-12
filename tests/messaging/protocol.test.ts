@@ -4,6 +4,7 @@ import {
   parseToolbarRequest,
   parseToolbarResponse,
 } from '@/shared/messaging/protocol';
+import type { MergeLensProtocolMap } from '@/shared/messaging/protocol';
 
 const request = {
   correlationId: 'request-1',
@@ -17,6 +18,13 @@ const request = {
 };
 
 describe('PR toolbar messaging protocol', () => {
+  it('defines a typed options-page command response', () => {
+    const response: ReturnType<MergeLensProtocolMap['openOptionsPage']> = {
+      status: 'success',
+    };
+
+    expect(response).toEqual({ status: 'success' });
+  });
   it('validates a safe toolbar request', () => {
     expect(parseToolbarRequest(request)).toEqual(request);
   });
