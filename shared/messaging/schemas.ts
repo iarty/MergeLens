@@ -13,6 +13,10 @@ export const toolbarRequestSchema = z.object({
   correlationId: z.string().min(1).max(128),
 });
 
+export const openOptionsPageResponseSchema = z.object({
+  status: z.literal('success'),
+});
+
 export const checkStatusSchema = z.enum([
   'queued',
   'in-progress',
@@ -79,3 +83,4 @@ export type ToolbarRequest = z.infer<typeof toolbarRequestSchema>;
 export type ToolbarResponse = z.infer<typeof toolbarResponseSchema>;
 export type ToolbarData = z.infer<typeof toolbarDataSchema>;
 export type ToolbarErrorCode = z.infer<typeof toolbarErrorCodeSchema>;
+export type OpenOptionsPageResponse = z.infer<typeof openOptionsPageResponseSchema>;
