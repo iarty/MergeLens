@@ -1,0 +1,260 @@
+.pr-toolbar {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  width: 100%;
+  min-height: 54px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1f2328;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  letter-spacing: 0;
+  line-height: 1.4;
+}
+
+.pr-toolbar *,
+.pr-toolbar *::before,
+.pr-toolbar *::after {
+  box-sizing: border-box;
+}
+
+.pr-toolbar__brand {
+  display: grid;
+  place-items: center;
+  border-right: 1px solid #d0d7de;
+  background: #f6f8fa;
+  color: #59636e;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pr-toolbar__content {
+  min-width: 0;
+  padding: 9px 12px;
+}
+
+.pr-toolbar__message,
+.pr-toolbar__success {
+  display: flex;
+  min-width: 0;
+  min-height: 34px;
+  align-items: center;
+  gap: 10px;
+}
+
+.pr-toolbar__message > span:nth-child(2) {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+}
+
+.pr-toolbar__message strong,
+.pr-toolbar__message span span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pr-toolbar__message strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pr-toolbar__message span span {
+  color: #59636e;
+  font-size: 12px;
+}
+
+.pr-toolbar__spinner {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  border: 2px solid #afb8c1;
+  border-top-color: #0969da;
+  border-radius: 50%;
+  animation: pr-toolbar-spin 0.8s linear infinite;
+}
+
+.pr-toolbar__status-dot,
+.pr-toolbar__check-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: #8c959f;
+}
+
+.pr-toolbar__status-dot--warning,
+.pr-toolbar__check-dot--action-required,
+.pr-toolbar__check-dot--queued,
+.pr-toolbar__check-dot--in-progress {
+  background: #bf8700;
+}
+
+.pr-toolbar__status-dot--error,
+.pr-toolbar__check-dot--failure,
+.pr-toolbar__check-dot--timed-out {
+  background: #cf222e;
+}
+
+.pr-toolbar__check-dot--success {
+  background: #1a7f37;
+}
+
+.pr-toolbar__check-dot--cancelled,
+.pr-toolbar__check-dot--neutral,
+.pr-toolbar__check-dot--skipped,
+.pr-toolbar__check-dot--unknown {
+  background: #8c959f;
+}
+
+.pr-toolbar__button,
+.pr-toolbar__actions-link {
+  min-height: 28px;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  padding: 4px 10px;
+  background: #f6f8fa;
+  color: #1f2328;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  line-height: 18px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.pr-toolbar__button:hover,
+.pr-toolbar__actions-link:hover {
+  background: #f3f4f6;
+}
+
+.pr-toolbar__button:focus-visible,
+.pr-toolbar__actions-link:focus-visible,
+.pr-toolbar__title:focus-visible,
+.pr-toolbar__check:focus-visible {
+  outline: 2px solid #0969da;
+  outline-offset: 2px;
+}
+
+.pr-toolbar__success {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(120px, auto) auto;
+  gap: 12px;
+}
+
+.pr-toolbar__pr,
+.pr-toolbar__checks {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+}
+
+.pr-toolbar__pr-state,
+.pr-toolbar__draft,
+.pr-toolbar__remaining {
+  flex: 0 0 auto;
+  border: 1px solid #d0d7de;
+  border-radius: 999px;
+  padding: 1px 7px;
+  color: #59636e;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.pr-toolbar__pr-state--open {
+  border-color: #1a7f37;
+  color: #1a7f37;
+}
+
+.pr-toolbar__pr-state--merged {
+  border-color: #8250df;
+  color: #8250df;
+}
+
+.pr-toolbar__pr-state--closed {
+  border-color: #cf222e;
+  color: #cf222e;
+}
+
+.pr-toolbar__title {
+  overflow: hidden;
+  min-width: 0;
+  color: #1f2328;
+  font-weight: 600;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pr-toolbar__title:hover,
+.pr-toolbar__check:hover,
+.pr-toolbar__actions-link:hover {
+  color: #0969da;
+}
+
+.pr-toolbar__checks {
+  justify-content: flex-end;
+}
+
+.pr-toolbar__check {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 130px;
+  align-items: center;
+  gap: 5px;
+  color: #59636e;
+  text-decoration: none;
+}
+
+.pr-toolbar__check-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pr-toolbar__empty-checks {
+  color: #59636e;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.pr-toolbar__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  margin: -1px;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+@keyframes pr-toolbar-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 720px) {
+  .pr-toolbar__success {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .pr-toolbar__checks {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    overflow: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pr-toolbar__spinner {
+    animation: none;
+  }
+}
