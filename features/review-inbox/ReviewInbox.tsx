@@ -1,0 +1,244 @@
+import { RefreshCw, Settings } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import type {
+  ReviewInboxData,
+  ReviewInboxError,
+  ReviewInboxSectionResult,
+} from '@/modules/pull-requests';
+import { createLogger } from '@/shared/logging/logger';
+import { ReviewInboxItem } from './ReviewInboxItem';
+import './ReviewInbox.css';
+
+const logger = createLogger('reviewInbox.ui');
+
+type InboxView = 'reviewRequests' | 'assigned' | 'recentActivity';
+
+interface ReviewInboxProps {
+  data?: ReviewInboxData;
+  error?: ReviewInboxError;
+  isLoading: boolean;
+  isRefreshing: boolean;
+  onRefresh: () => void;
+  onOpenSettings: () => void;
+}
+
+const VIEWS: Array<{ id: InboxView; label: string }> = [
+  { id: 'reviewRequests', label: 'Review' },
+  { id: 'assigned', label: 'Assigned' },
+  { id: 'recentActivity', label: 'Recent' },
+];
+
+const getSectionCount = (
+  section: ReviewInboxSectionResult | undefined,
+): number => {
+  return section?.status === 'success' ? section.items.length : 0;
+};
+
+const getErrorContent = (error: ReviewInboxError) => {
+  const content: Partial<
+    Record<ReviewInboxError['code'], { title: string; message: string }>
+  > = {
+    'invalid-response': {
+      title: 'Unexpected GitHub response',
+      message: 'Refresh the inbox to try again.',
+    },
+    'missing-token': {
+      title: 'Connect GitHub',
+      message: 'Add a personal access token to load your review inbox.',
+    },
+    'network-error': {
+      title: 'GitHub is unreachable',
+      message: 'Check your connection and retry.',
+    },
+    'rate-limited': {
+      title: 'Search limit reached',
+      message:
+        error.retryAfterSeconds === undefined
+          ? 'GitHub will allow more searches shortly.'
+          : `Retry in about ${error.retryAfterSeconds} seconds.`,
+    },
+    'receiver-unavailable': {
+      title: 'MergeLens is reconnecting',
+      message: 'Reload the extension and retry.',
+    },
+    unauthorized: {
+      title: 'Token needs attention',
+      message: 'Update your GitHub token in settings.',
+    },
+  };
+
+  return (
+    content[error.code] ?? {
+      title: 'Inbox unavailable',
+      message: error.message,
+    }
+  );
+};
+
+const InboxSkeleton = () => {
+  return (
+    <div className="review-inbox__skeleton" role="status" aria-live="polite">
+      <span className="review-inbox__sr-only">Loading review inbox</span>
+      {[0, 1, 2].map((index) => (
+        <div className="review-inbox__skeleton-row" key={index} aria-hidden="true">
+          <span />
+          <strong />
+          <small />
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const ErrorState = ({
+  error,
+  onOpenSettings,
+  onRetry,
+}: {
+  error: ReviewInboxError;
+  onOpenSettings: () => void;
+  onRetry: () => void;
+}) => {
+  const content = getErrorContent(error);
+  const requiresSettings =
+    error.code === 'missing-token' || error.code === 'unauthorized';
+
+  return (
+    <div className="review-inbox__state review-inbox__state--error" role="alert">
+      <span className="review-inbox__state-mark" aria-hidden="true">!</span>
+      <strong>{content.title}</strong>
+      <p>{content.message}</p>
+      <button
+        className="review-inbox__command"
+        type="button"
+        onClick={requiresSettings ? onOpenSettings : onRetry}
+      >
+        {requiresSettings ? 'Open settings' : 'Retry'}
+      </button>
+    </div>
+  );
+};
+
+export const ReviewInbox = ({
+  data,
+  error,
+  isLoading,
+  isRefreshing,
+  onRefresh,
+  onOpenSettings,
+}: ReviewInboxProps) => {
+  const [activeView, setActiveView] = useState<InboxView>('reviewRequests');
+  const activeSection = data?.[activeView];
+
+  useEffect(() => {
+    logger.debug('Review inbox UI state changed', {
+      activeView,
+      isLoading,
+      isRefreshing,
+      itemCount: getSectionCount(activeSection),
+      sectionStatus: activeSection?.status,
+    });
+    if (activeSection?.status === 'error') {
+      logger.warn('Review inbox rendered a recoverable section error', {
+        activeView,
+        code: activeSection.error.code,
+      });
+    }
+  }, [activeSection, activeView, isLoading, isRefreshing]);
+
+  const handleViewChange = (view: InboxView) => {
+    logger.debug('Review inbox view selected', { view });
+    setActiveView(view);
+  };
+
+  return (
+    <main className="review-inbox">
+      <header className="review-inbox__header">
+        <div>
+          <span className="review-inbox__product">MergeLens</span>
+          <h1>Review inbox</h1>
+        </div>
+        <div className="review-inbox__tools">
+          <button
+            className="review-inbox__icon-button"
+            type="button"
+            aria-label="Refresh inbox"
+            title="Refresh inbox"
+            onClick={onRefresh}
+            disabled={isLoading || isRefreshing}
+          >
+            <RefreshCw
+              aria-hidden="true"
+              size={17}
+              className={isRefreshing ? 'review-inbox__spin' : undefined}
+            />
+          </button>
+          <button
+            className="review-inbox__icon-button"
+            type="button"
+            aria-label="Open settings"
+            title="Open settings"
+            onClick={onOpenSettings}
+          >
+            <Settings aria-hidden="true" size={17} />
+          </button>
+        </div>
+      </header>
+
+      <nav className="review-inbox__tabs" aria-label="Review inbox views">
+        {VIEWS.map((view) => (
+          <button
+            className="review-inbox__tab"
+            type="button"
+            aria-current={activeView === view.id ? 'page' : undefined}
+            onClick={() => handleViewChange(view.id)}
+            key={view.id}
+          >
+            <span>{view.label}</span>
+            <span className="review-inbox__count">
+              {getSectionCount(data?.[view.id])}
+            </span>
+          </button>
+        ))}
+      </nav>
+
+      <section className="review-inbox__content" aria-live="polite">
+        {isLoading ? <InboxSkeleton /> : null}
+        {!isLoading && error ? (
+          <ErrorState
+            error={error}
+            onOpenSettings={onOpenSettings}
+            onRetry={onRefresh}
+          />
+        ) : null}
+        {!isLoading && !error && activeSection?.status === 'error' ? (
+          <ErrorState
+            error={activeSection.error}
+            onOpenSettings={onOpenSettings}
+            onRetry={onRefresh}
+          />
+        ) : null}
+        {!isLoading && !error && activeSection?.status === 'success' ? (
+          activeSection.items.length > 0 ? (
+            <div className="review-inbox__list">
+              {activeSection.items.map((item) => (
+                <ReviewInboxItem item={item} key={`${item.repository.fullName}#${item.number}`} />
+              ))}
+            </div>
+          ) : (
+            <div className="review-inbox__state" role="status">
+              <span className="review-inbox__state-mark review-inbox__state-mark--success" aria-hidden="true">✓</span>
+              <strong>All clear</strong>
+              <p>No pull requests in this view.</p>
+            </div>
+          )
+        ) : null}
+      </section>
+
+      <footer className="review-inbox__footer">
+        <span className={`review-inbox__connection ${error ? 'review-inbox__connection--error' : ''}`} />
+        <span>{isRefreshing ? 'Refreshing from GitHub' : 'GitHub REST API'}</span>
+      </footer>
+    </main>
+  );
+};
