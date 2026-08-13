@@ -222,6 +222,22 @@ describe('mountPrToolbar', () => {
     expect(fakeUi.autoMount).toHaveBeenCalledOnce();
   });
 
+  it('refreshes toolbar data for the current PR on external request', async () => {
+    const fakeContext = createFakeContext();
+    const fakeUi = createFakeUi();
+    const sendToolbarMessage = vi.fn().mockResolvedValue(successResponse);
+    const toolbar = await mountPrToolbar(fakeContext.context as never, {
+      createUi: vi.fn().mockResolvedValue(fakeUi),
+      sendToolbarMessage,
+      findAnchor: () => document.body,
+    });
+
+    await toolbar.reconcile(context);
+    await toolbar.refresh();
+
+    expect(sendToolbarMessage).toHaveBeenCalledTimes(2);
+  });
+
   it('removes the UI and invalidates pending requests on context invalidation', async () => {
     const fakeContext = createFakeContext();
     const fakeUi = createFakeUi();

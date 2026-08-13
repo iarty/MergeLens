@@ -295,5 +295,17 @@ export const mountPrToolbar = async (
   };
 
   ctx.onInvalidated(remove);
-  return { reconcile, remove };
+  const refresh = async (): Promise<void> => {
+    if (!currentContext) {
+      logger.warn('Ignored toolbar refresh without PR context');
+      return;
+    }
+
+    logger.info('Refreshing PR toolbar from external action', {
+      contextKey: currentContextKey,
+    });
+    await loadToolbarData(currentContext);
+  };
+
+  return { reconcile, refresh, remove };
 };
