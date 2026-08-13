@@ -92,4 +92,25 @@ describe('command palette integration', () => {
     fakeContext.invalidate();
     expect(ui.remove).toHaveBeenCalledOnce();
   });
+
+  it('opens from an extension request and removes the listener on invalidation', () => {
+    history.replaceState({}, '', '/facebook/react/pull/42');
+    const fakeContext = createFakeContext();
+    const ui = createFakeUi();
+    let openFromRequest: (() => void) | undefined;
+    const removeOpenRequest = vi.fn();
+
+    createCommandPaletteController(fakeContext.context as never, ui, window, {
+      registerOpenRequest: (open) => {
+        openFromRequest = open;
+        return removeOpenRequest;
+      },
+    });
+
+    openFromRequest?.();
+    expect(ui.render.mock.lastCall?.[0]).toMatchObject({ isOpen: true });
+
+    fakeContext.invalidate();
+    expect(removeOpenRequest).toHaveBeenCalledOnce();
+  });
 });

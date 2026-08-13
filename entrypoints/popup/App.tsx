@@ -23,6 +23,25 @@ const App = () => {
     });
   };
 
+  const handleOpenCommandPalette = () => {
+    logger.info('[FIX:command-palette-popup] Opening command palette from popup');
+    void browser.tabs
+      .query({ active: true, currentWindow: true })
+      .then(async ([activeTab]) => {
+        if (activeTab?.id === undefined) {
+          throw new Error('Active tab is unavailable');
+        }
+
+        await sendMessage('openCommandPalette', undefined, activeTab.id);
+        window.close();
+      })
+      .catch((error: unknown) => {
+        logger.warn('[FIX:command-palette-popup] Command palette is unavailable in active tab', {
+          errorName: error instanceof Error ? error.name : 'UnknownError',
+        });
+      });
+  };
+
   return (
     <ReviewInbox
       data={inboxQuery.data}
@@ -31,6 +50,7 @@ const App = () => {
       isRefreshing={inboxQuery.isRefetching}
       onRefresh={handleRefresh}
       onOpenSettings={handleOpenSettings}
+      onOpenCommandPalette={handleOpenCommandPalette}
     />
   );
 };

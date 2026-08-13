@@ -6,6 +6,7 @@ import {
   toolbarRequestSchema,
   toolbarResponseSchema,
   type OpenOptionsPageResponse,
+  type OpenCommandPaletteResponse,
   type ReviewInboxRequest,
   type ReviewInboxResponse,
   type ToolbarRequest,
@@ -18,6 +19,7 @@ export interface MergeLensProtocolMap {
   getPullRequestToolbarData(data: ToolbarRequest): ToolbarResponse;
   getReviewInbox(data: ReviewInboxRequest): ReviewInboxResponse;
   openOptionsPage(): OpenOptionsPageResponse;
+  openCommandPalette(): OpenCommandPaletteResponse;
 }
 
 export const { onMessage, removeAllListeners, sendMessage } =
