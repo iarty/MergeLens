@@ -5,6 +5,7 @@ import {
 import { observePageContext } from '@/shared/github/dom/navigation';
 import { mountPrToolbar } from '@/features/pr-toolbar/mountPrToolbar';
 import { createLogger } from '@/shared/logging/logger';
+import { onMessage } from '@/shared/messaging/protocol';
 
 const logger = createLogger('content');
 
@@ -16,6 +17,12 @@ export default defineContentScript({
     const paletteUi = await mountCommandPaletteUi(ctx);
     createCommandPaletteController(ctx, paletteUi, window, {
       refreshPullRequestToolbar: toolbar.refresh,
+      registerOpenRequest: (open) =>
+        onMessage('openCommandPalette', () => {
+          logger.info('[FIX:command-palette-popup] Opening palette from extension popup');
+          open();
+          return { status: 'success' };
+        }),
     });
     observePageContext(ctx, window, (context) => {
       void toolbar.reconcile(context);

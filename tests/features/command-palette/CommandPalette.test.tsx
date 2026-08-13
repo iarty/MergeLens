@@ -1,4 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { CommandPalette } from '@/features/command-palette/CommandPalette';
 import { createCommandContext } from '@/features/command-palette/commands/context';
@@ -19,6 +21,18 @@ const renderPalette = (overrides = {}) => {
 };
 
 describe('CommandPalette', () => {
+  it('defines readable text colors independently from GitHub page styles', () => {
+    const stylesheet = readFileSync(
+      path.resolve(process.cwd(), 'features/command-palette/CommandPalette.css'),
+      'utf8',
+    );
+
+    expect(stylesheet).toMatch(/\.command-palette\s*\{[^}]*color:\s*#1f2328/s);
+    expect(stylesheet).toMatch(/\.command-palette__header h2\s*\{[^}]*color:\s*#1f2328/s);
+    expect(stylesheet).toMatch(/\.command-palette__input\s*\{[^}]*color:\s*#1f2328/s);
+    expect(stylesheet).toMatch(/\.command-palette__command\s*\{[^}]*color:\s*#1f2328/s);
+  });
+
   it('renders an accessible dialog and available commands', async () => {
     renderPalette();
 

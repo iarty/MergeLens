@@ -1,4 +1,4 @@
-import { RefreshCw, Settings } from 'lucide-react';
+import { Command as CommandIcon, RefreshCw, Settings } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type {
   ReviewInboxData,
@@ -20,6 +20,7 @@ interface ReviewInboxProps {
   isRefreshing: boolean;
   onRefresh: () => void;
   onOpenSettings: () => void;
+  onOpenCommandPalette: () => void;
 }
 
 const VIEWS: Array<{ id: InboxView; label: string }> = [
@@ -126,6 +127,7 @@ export const ReviewInbox = ({
   isRefreshing,
   onRefresh,
   onOpenSettings,
+  onOpenCommandPalette,
 }: ReviewInboxProps) => {
   const [activeView, setActiveView] = useState<InboxView>('reviewRequests');
   const activeSection = data?.[activeView];
@@ -233,6 +235,23 @@ export const ReviewInbox = ({
             </div>
           )
         ) : null}
+      </section>
+
+      <section className="review-inbox__palette-launcher" aria-label="Command palette">
+        <div>
+          <strong>Command palette</strong>
+          <span>Run GitHub actions from the current page</span>
+        </div>
+        <button
+          className="review-inbox__palette-button"
+          type="button"
+          aria-label="Open command palette"
+          onClick={onOpenCommandPalette}
+        >
+          <CommandIcon aria-hidden="true" size={15} />
+          <span>Open</span>
+          <kbd>Ctrl / Cmd K</kbd>
+        </button>
       </section>
 
       <footer className="review-inbox__footer">

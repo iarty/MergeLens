@@ -1,6 +1,9 @@
 import type { ContentScriptContext } from 'wxt/utils/content-script-context';
 import { createLogger } from '@/shared/logging/logger';
-import { isReceiverUnavailableError, sendMessage } from '@/shared/messaging/protocol';
+import {
+  isReceiverUnavailableError,
+  sendMessage,
+} from '@/shared/messaging/protocol';
 import { createCommandRegistry } from './commandRegistry';
 import { builtInCommands } from './commands/builtInCommands';
 import { createCommandContext } from './commands/context';
@@ -27,6 +30,7 @@ export interface CommandPaletteControllerOptions {
   navigate?: (url: string) => void;
   openSettings?: () => Promise<void>;
   refreshPullRequestToolbar?: () => Promise<void>;
+  registerOpenRequest?: (open: () => void) => () => void;
 }
 
 export interface CommandPaletteController {
@@ -140,10 +144,12 @@ export const createCommandPaletteController = (
     updateContext(newUrl);
   });
   keyboard.start();
+  const removeOpenMessageListener = options.registerOpenRequest?.(open) ?? (() => {});
   ui.mount();
   ui.render({ isOpen, context, onClose: close, onExecute, returnFocus: opener });
 
   const remove = (): void => {
+    removeOpenMessageListener();
     keyboard.stop();
     ui.remove();
     activeControllers.delete(targetWindow);

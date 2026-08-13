@@ -11,6 +11,7 @@ const renderInbox = (
 ) => {
   const onRefresh = vi.fn();
   const onOpenSettings = vi.fn();
+  const onOpenCommandPalette = vi.fn();
   render(
     <ReviewInbox
       data={createReviewInboxData()}
@@ -18,13 +19,23 @@ const renderInbox = (
       isRefreshing={false}
       onRefresh={onRefresh}
       onOpenSettings={onOpenSettings}
+      onOpenCommandPalette={onOpenCommandPalette}
       {...props}
     />,
   );
-  return { onRefresh, onOpenSettings };
+  return { onRefresh, onOpenSettings, onOpenCommandPalette };
 };
 
 describe('ReviewInbox', () => {
+  it('exposes the command palette from the extension popup', () => {
+    const { onOpenCommandPalette } = renderInbox();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open command palette' }));
+
+    expect(onOpenCommandPalette).toHaveBeenCalledOnce();
+    expect(screen.getByText('Command palette')).toBeVisible();
+  });
+
   it('renders loading state and disabled refresh', () => {
     renderInbox({ data: undefined, isLoading: true });
 
