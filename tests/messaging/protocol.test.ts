@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   isReceiverUnavailableError,
+  parseReviewInboxRequest,
+  parseReviewInboxResponse,
   parseToolbarRequest,
   parseToolbarResponse,
 } from '@/shared/messaging/protocol';
@@ -65,5 +67,39 @@ describe('PR toolbar messaging protocol', () => {
       ),
     ).toBe(true);
     expect(isReceiverUnavailableError(new Error('Network request failed'))).toBe(false);
+  });
+
+  it('validates a review inbox request and partial response', () => {
+    expect(parseReviewInboxRequest({ correlationId: 'inbox-1' })).toEqual({
+      correlationId: 'inbox-1',
+    });
+
+    const response = {
+      status: 'success' as const,
+      correlationId: 'inbox-1',
+      data: {
+        reviewRequests: { status: 'success' as const, items: [] },
+        assigned: {
+          status: 'error' as const,
+          error: { code: 'rate-limited' as const, message: 'Try later' },
+        },
+        recentActivity: { status: 'success' as const, items: [] },
+      },
+    };
+
+    expect(parseReviewInboxResponse(response)).toEqual(response);
+  });
+
+  it('rejects malformed review inbox data', () => {
+    expect(() => parseReviewInboxRequest({ correlationId: '' })).toThrow(
+      'Invalid review inbox request',
+    );
+    expect(() =>
+      parseReviewInboxResponse({
+        status: 'success',
+        correlationId: 'inbox-1',
+        data: { reviewRequests: null },
+      }),
+    ).toThrow('Invalid review inbox response');
   });
 });

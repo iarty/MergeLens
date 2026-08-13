@@ -1,9 +1,13 @@
 import { defineExtensionMessaging } from '@webext-core/messaging';
 import { createLogger } from '@/shared/logging/logger';
 import {
+  reviewInboxRequestSchema,
+  reviewInboxResponseSchema,
   toolbarRequestSchema,
   toolbarResponseSchema,
   type OpenOptionsPageResponse,
+  type ReviewInboxRequest,
+  type ReviewInboxResponse,
   type ToolbarRequest,
   type ToolbarResponse,
 } from './schemas';
@@ -12,6 +16,7 @@ const logger = createLogger('messaging');
 
 export interface MergeLensProtocolMap {
   getPullRequestToolbarData(data: ToolbarRequest): ToolbarResponse;
+  getReviewInbox(data: ReviewInboxRequest): ReviewInboxResponse;
   openOptionsPage(): OpenOptionsPageResponse;
 }
 
@@ -56,6 +61,49 @@ export const parseToolbarResponse = (input: unknown): ToolbarResponse => {
   logger.debug('Validated toolbar response', {
     correlationId: result.data.correlationId,
     status: result.data.status,
+  });
+  return result.data;
+};
+
+export const parseReviewInboxRequest = (
+  input: unknown,
+): ReviewInboxRequest => {
+  const result = reviewInboxRequestSchema.safeParse(input);
+  if (!result.success) {
+    logger.warn('Rejected invalid review inbox request', {
+      issueCount: result.error.issues.length,
+    });
+    throw new Error('Invalid review inbox request');
+  }
+
+  logger.debug('Validated review inbox request', {
+    correlationId: result.data.correlationId,
+  });
+  return result.data;
+};
+
+export const parseReviewInboxResponse = (
+  input: unknown,
+): ReviewInboxResponse => {
+  const result = reviewInboxResponseSchema.safeParse(input);
+  if (!result.success) {
+    logger.warn('Rejected invalid review inbox response', {
+      issueCount: result.error.issues.length,
+    });
+    throw new Error('Invalid review inbox response');
+  }
+
+  logger.debug('Validated review inbox response', {
+    correlationId: result.data.correlationId,
+    status: result.data.status,
+    sectionStatuses:
+      result.data.status === 'success'
+        ? {
+            reviewRequests: result.data.data.reviewRequests.status,
+            assigned: result.data.data.assigned.status,
+            recentActivity: result.data.data.recentActivity.status,
+          }
+        : undefined,
   });
   return result.data;
 };

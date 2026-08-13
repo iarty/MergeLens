@@ -13,6 +13,10 @@ export const toolbarRequestSchema = z.object({
   correlationId: z.string().min(1).max(128),
 });
 
+export const reviewInboxRequestSchema = z.object({
+  correlationId: z.string().min(1).max(128),
+});
+
 export const openOptionsPageResponseSchema = z.object({
   status: z.literal('success'),
 });
@@ -62,6 +66,67 @@ export const toolbarErrorCodeSchema = z.enum([
   'unknown-error',
 ]);
 
+export const reviewInboxReasonSchema = z.enum([
+  'review-requested',
+  'assigned',
+  'recent-activity',
+]);
+
+export const reviewInboxRepositorySchema = z.object({
+  owner: z.string().min(1),
+  name: z.string().min(1),
+  fullName: z.string().min(1),
+  url: z.url(),
+});
+
+export const reviewInboxPullRequestSchema = z.object({
+  id: z.string().min(1),
+  number: z.number().int().positive(),
+  title: z.string().min(1),
+  url: z.url(),
+  repository: reviewInboxRepositorySchema,
+  authorLogin: z.string().min(1).nullable(),
+  isDraft: z.boolean(),
+  updatedAt: z.iso.datetime({ offset: true }),
+  reasons: z.array(reviewInboxReasonSchema),
+});
+
+export const reviewInboxErrorSchema = z.object({
+  code: toolbarErrorCodeSchema,
+  message: z.string().min(1),
+  retryAfterSeconds: z.number().int().nonnegative().optional(),
+});
+
+export const reviewInboxSectionResultSchema = z.discriminatedUnion('status', [
+  z.object({
+    status: z.literal('success'),
+    items: z.array(reviewInboxPullRequestSchema),
+  }),
+  z.object({
+    status: z.literal('error'),
+    error: reviewInboxErrorSchema,
+  }),
+]);
+
+export const reviewInboxDataSchema = z.object({
+  reviewRequests: reviewInboxSectionResultSchema,
+  assigned: reviewInboxSectionResultSchema,
+  recentActivity: reviewInboxSectionResultSchema,
+});
+
+export const reviewInboxResponseSchema = z.discriminatedUnion('status', [
+  z.object({
+    status: z.literal('success'),
+    correlationId: z.string().min(1).max(128),
+    data: reviewInboxDataSchema,
+  }),
+  z.object({
+    status: z.literal('error'),
+    correlationId: z.string().min(1).max(128),
+    error: reviewInboxErrorSchema,
+  }),
+]);
+
 export const toolbarResponseSchema = z.discriminatedUnion('status', [
   z.object({
     status: z.literal('success'),
@@ -84,3 +149,9 @@ export type ToolbarResponse = z.infer<typeof toolbarResponseSchema>;
 export type ToolbarData = z.infer<typeof toolbarDataSchema>;
 export type ToolbarErrorCode = z.infer<typeof toolbarErrorCodeSchema>;
 export type OpenOptionsPageResponse = z.infer<typeof openOptionsPageResponseSchema>;
+export type ReviewInboxRequest = z.infer<typeof reviewInboxRequestSchema>;
+export type ReviewInboxResponse = z.infer<typeof reviewInboxResponseSchema>;
+export type ReviewInboxData = z.infer<typeof reviewInboxDataSchema>;
+export type ReviewInboxPullRequest = z.infer<
+  typeof reviewInboxPullRequestSchema
+>;

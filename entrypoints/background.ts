@@ -1,5 +1,7 @@
 import {
+  createGetReviewInbox,
   createGetPullRequestToolbarData,
+  OctokitReviewInboxReader,
   OctokitPullRequestReader,
 } from '@/modules/pull-requests';
 import { createLogger } from '@/shared/logging/logger';
@@ -11,9 +13,14 @@ export default defineBackground(() => {
   const getPullRequestToolbarData = createGetPullRequestToolbarData(
     new OctokitPullRequestReader(),
   );
+  const getReviewInbox = createGetReviewInbox(new OctokitReviewInboxReader());
 
   onMessage('getPullRequestToolbarData', ({ data }) => {
     return getPullRequestToolbarData(data);
+  });
+
+  onMessage('getReviewInbox', ({ data }) => {
+    return getReviewInbox(data);
   });
 
   onMessage('openOptionsPage', async () => {
