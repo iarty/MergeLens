@@ -1,12 +1,15 @@
 import type { ContentScriptContext } from 'wxt/utils/content-script-context';
-import { observePageContext } from '@/shared/github/dom/navigation';
 import { createLogger } from '@/shared/logging/logger';
 import { isReceiverUnavailableError, sendMessage } from '@/shared/messaging/protocol';
-import { builtInCommands, createCommandContext, createCommandRegistry } from '.';
+import { createCommandRegistry } from './commandRegistry';
+import { builtInCommands } from './commands/builtInCommands';
+import { createCommandContext } from './commands/context';
 import type { CommandContext, CommandDependencies } from './types';
+import type { CommandId } from './types';
 import { createKeyboardController } from './keyboardController';
 
 const logger = createLogger('commandPalette.controller');
+const activeControllers = new WeakMap<Window, CommandPaletteController>();
 
 export interface PaletteControllerUi {
   mount: () => void;
@@ -15,18 +18,39 @@ export interface PaletteControllerUi {
     isOpen: boolean;
     context: CommandContext;
     onClose: () => void;
-    onExecute: (commandId: Parameters<ReturnType<typeof createCommandRegistry>['execute']>[0]) => Promise<void>;
+    onExecute: (commandId: CommandId) => Promise<void>;
+    returnFocus: HTMLElement | null;
   }) => void;
+}
+
+export interface CommandPaletteControllerOptions {
+  navigate?: (url: string) => void;
+  openSettings?: () => Promise<void>;
+  refreshPullRequestToolbar?: () => Promise<void>;
+}
+
+export interface CommandPaletteController {
+  open: () => void;
+  close: () => void;
+  remove: () => void;
 }
 
 export const createCommandPaletteController = (
   ctx: ContentScriptContext,
   ui: PaletteControllerUi,
   targetWindow: Window = window,
-) => {
+  options: CommandPaletteControllerOptions = {},
+): CommandPaletteController => {
+  const existingController = activeControllers.get(targetWindow);
+  if (existingController) {
+    logger.warn('Ignored duplicate command palette initialization');
+    return existingController;
+  }
+
   const registry = createCommandRegistry(builtInCommands);
   const initialContext = createCommandContext(new URL(targetWindow.location.href));
   let isOpen = false;
+  let opener: HTMLElement | null = null;
 
   if (!initialContext) {
     logger.error('[FIX:command-palette-ts] Initial page context is not a supported GitHub URL');
@@ -36,17 +60,15 @@ export const createCommandPaletteController = (
   let context: CommandContext = initialContext;
 
   const dependencies: CommandDependencies = {
-    navigate: (url) => {
+    navigate: options.navigate ?? ((url) => {
       targetWindow.location.assign(url);
-    },
-    openSettings: async () => {
+    }),
+    openSettings: options.openSettings ?? (async () => {
       await sendMessage('openOptionsPage');
-    },
-    refreshPullRequestToolbar: async () => {
-      logger.info('Requested toolbar refresh from palette');
-      // The toolbar observes context changes; re-publishing is intentionally kept
-      // at the entrypoint so the palette does not couple to its private controller.
-    },
+    }),
+    refreshPullRequestToolbar: options.refreshPullRequestToolbar ?? (async () => {
+      logger.warn('Toolbar refresh callback is unavailable');
+    }),
   };
 
   const close = (): void => {
@@ -55,7 +77,7 @@ export const createCommandPaletteController = (
     }
 
     isOpen = false;
-    ui.render({ isOpen, context, onClose: close, onExecute });
+    ui.render({ isOpen, context, onClose: close, onExecute, returnFocus: opener });
     logger.info('Command palette closed');
   };
 
@@ -64,14 +86,17 @@ export const createCommandPaletteController = (
       return;
     }
 
+    opener = targetWindow.document.activeElement instanceof HTMLElement
+      ? targetWindow.document.activeElement
+      : null;
     isOpen = true;
-    ui.render({ isOpen, context, onClose: close, onExecute });
+    ui.render({ isOpen, context, onClose: close, onExecute, returnFocus: opener });
     logger.info('Command palette opened', {
       availableCount: registry.getAvailable(context).length,
     });
   };
 
-  const onExecute = async (commandId: Parameters<typeof registry.execute>[0]): Promise<void> => {
+  const onExecute = async (commandId: CommandId): Promise<void> => {
     try {
       await registry.execute(commandId, context, dependencies);
       close();
@@ -103,7 +128,7 @@ export const createCommandPaletteController = (
 
     context = nextContext;
     if (isOpen) {
-      ui.render({ isOpen, context, onClose: close, onExecute });
+      ui.render({ isOpen, context, onClose: close, onExecute, returnFocus: opener });
     }
     logger.debug('Updated palette page context', {
       hasPullRequest: context.pageContext?.kind === 'pull-request',
@@ -111,17 +136,22 @@ export const createCommandPaletteController = (
     });
   };
 
-  observePageContext(ctx, targetWindow, () => updateContext(new URL(targetWindow.location.href)));
+  ctx.addEventListener(targetWindow, 'wxt:locationchange', ({ newUrl }) => {
+    updateContext(newUrl);
+  });
   keyboard.start();
   ui.mount();
-  ui.render({ isOpen, context, onClose: close, onExecute });
+  ui.render({ isOpen, context, onClose: close, onExecute, returnFocus: opener });
 
   const remove = (): void => {
     keyboard.stop();
     ui.remove();
+    activeControllers.delete(targetWindow);
     logger.info('Command palette controller removed');
   };
 
+  const controller = { open, close, remove };
+  activeControllers.set(targetWindow, controller);
   ctx.onInvalidated(remove);
-  return { open, close, remove };
+  return controller;
 };

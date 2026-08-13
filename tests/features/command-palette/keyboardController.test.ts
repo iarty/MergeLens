@@ -44,4 +44,30 @@ describe('command palette keyboard controller', () => {
     controller.stop();
     input.remove();
   });
+
+  it('does not claim modified or duplicate shortcuts', () => {
+    const open = vi.fn();
+    const controller = createKeyboardController(window, {
+      open,
+      close: vi.fn(),
+      isOpen: () => false,
+    });
+    controller.start();
+    controller.start();
+
+    window.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'k',
+      ctrlKey: true,
+      shiftKey: true,
+      cancelable: true,
+    }));
+    window.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'p',
+      ctrlKey: true,
+      cancelable: true,
+    }));
+
+    expect(open).not.toHaveBeenCalled();
+    controller.stop();
+  });
 });
