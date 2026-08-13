@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>GitHub command palette fixture</title>
+    <style>
+      body { margin: 0; color: #1f2328; font: 14px Arial, sans-serif; }
+      header { padding: 20px 24px; background: #fff; border-bottom: 1px solid #d0d7de; }
+      main { max-width: 960px; margin: 24px auto; padding: 0 20px; }
+      button, input { margin-right: 8px; padding: 7px 10px; }
+      input { margin-top: 16px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <strong>facebook / react</strong>
+      <nav aria-label="Fixture navigation">
+        <button id="same-pr" type="button">Same PR</button>
+        <button id="next-pr" type="button">Next PR</button>
+        <button id="repository" type="button">Repository</button>
+      </nav>
+      <label>
+        Native search
+        <input id="native-search" type="search" />
+      </label>
+    </header>
+    <main id="diff-comparison-viewer-container">
+      <header data-component="SplitPageLayout.Header">Pull request fixture</header>
+    </main>
+    <script>
+      const navigate = (path) => history.pushState({}, '', path);
+      document.querySelector('#same-pr').addEventListener('click', () => navigate('/facebook/react/pull/42/files'));
+      document.querySelector('#next-pr').addEventListener('click', () => navigate('/facebook/react/pull/43'));
+      document.querySelector('#repository').addEventListener('click', () => navigate('/facebook/react'));
+    </script>
+  </body>
+</html>
