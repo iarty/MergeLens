@@ -1,20 +1,40 @@
 import { defineExtensionMessaging } from "@webext-core/messaging";
 import { createLogger } from "@/shared/logging/logger";
 import {
+  deleteReviewTemplateRequestSchema,
+  deleteReviewTemplateResponseSchema,
+  getLocalReviewWorkspaceRequestSchema,
+  getLocalReviewWorkspaceResponseSchema,
+  listReviewTemplatesRequestSchema,
+  listReviewTemplatesResponseSchema,
   reviewInboxRequestSchema,
   reviewInboxResponseSchema,
   quickLinksRequestSchema,
   quickLinksResponseSchema,
+  savePullRequestNoteRequestSchema,
+  savePullRequestNoteResponseSchema,
   toolbarRequestSchema,
   toolbarResponseSchema,
+  upsertReviewTemplateRequestSchema,
+  upsertReviewTemplateResponseSchema,
+  type DeleteReviewTemplateRequest,
+  type DeleteReviewTemplateResponse,
+  type GetLocalReviewWorkspaceRequest,
+  type GetLocalReviewWorkspaceResponse,
+  type ListReviewTemplatesRequest,
+  type ListReviewTemplatesResponse,
   type OpenOptionsPageResponse,
   type QuickLinksRequest,
   type QuickLinksResponse,
   type OpenCommandPaletteResponse,
   type ReviewInboxRequest,
   type ReviewInboxResponse,
+  type SavePullRequestNoteRequest,
+  type SavePullRequestNoteResponse,
   type ToolbarRequest,
   type ToolbarResponse,
+  type UpsertReviewTemplateRequest,
+  type UpsertReviewTemplateResponse,
 } from "./schemas";
 
 const logger = createLogger("messaging");
@@ -23,6 +43,21 @@ export interface MergeLensProtocolMap {
   getPullRequestToolbarData(data: ToolbarRequest): ToolbarResponse;
   getPullRequestQuickLinks(data: QuickLinksRequest): QuickLinksResponse;
   getReviewInbox(data: ReviewInboxRequest): ReviewInboxResponse;
+  getLocalReviewWorkspace(
+    data: GetLocalReviewWorkspaceRequest,
+  ): GetLocalReviewWorkspaceResponse;
+  savePullRequestNote(
+    data: SavePullRequestNoteRequest,
+  ): SavePullRequestNoteResponse;
+  listReviewTemplates(
+    data: ListReviewTemplatesRequest,
+  ): ListReviewTemplatesResponse;
+  upsertReviewTemplate(
+    data: UpsertReviewTemplateRequest,
+  ): UpsertReviewTemplateResponse;
+  deleteReviewTemplate(
+    data: DeleteReviewTemplateRequest,
+  ): DeleteReviewTemplateResponse;
   openOptionsPage(): OpenOptionsPageResponse;
   openCommandPalette(): OpenCommandPaletteResponse;
 }
@@ -30,10 +65,18 @@ export interface MergeLensProtocolMap {
 export const { onMessage, removeAllListeners, sendMessage } =
   defineExtensionMessaging<MergeLensProtocolMap>({
     logger: {
-      debug: (...args) => logger.debug("Message debug event", { args }),
-      log: (...args) => logger.info("Message lifecycle event", { args }),
-      warn: (...args) => logger.warn("Message warning", { args }),
-      error: (...args) => logger.error("Message failure", { args }),
+      debug: (...args) => logger.debug("Message debug event", {
+        argumentCount: args.length,
+      }),
+      log: (...args) => logger.info("Message lifecycle event", {
+        argumentCount: args.length,
+      }),
+      warn: (...args) => logger.warn("Message warning", {
+        argumentCount: args.length,
+      }),
+      error: (...args) => logger.error("Message failure", {
+        argumentCount: args.length,
+      }),
     },
     throwOnUnknownMessageFormat: false,
   });
@@ -144,6 +187,152 @@ export const parseReviewInboxResponse = (
   });
   return result.data;
 };
+
+const parseLocalReviewMessage = <T>(
+  schema: { safeParse: (input: unknown) =>
+    | { success: true; data: T }
+    | { success: false; error: { issues: unknown[] } } },
+  input: unknown,
+  label: string,
+  metadata: (data: T) => Record<string, unknown>,
+): T => {
+  const result = schema.safeParse(input);
+  if (!result.success) {
+    logger.warn(`Rejected invalid ${label}`, {
+      issueCount: result.error.issues.length,
+    });
+    throw new Error(`Invalid ${label}`);
+  }
+
+  logger.debug(`Validated ${label}`, metadata(result.data));
+  return result.data;
+};
+
+const responseMetadata = (
+  response: { correlationId: string; status: 'success' | 'error' },
+) => ({
+  correlationId: response.correlationId,
+  status: response.status,
+});
+
+export const parseGetLocalReviewWorkspaceRequest = (
+  input: unknown,
+): GetLocalReviewWorkspaceRequest =>
+  parseLocalReviewMessage(
+    getLocalReviewWorkspaceRequestSchema,
+    input,
+    'local review workspace request',
+    (request) => ({
+      correlationId: request.correlationId,
+      owner: request.context.owner,
+      repository: request.context.repository,
+      pullNumber: request.context.pullNumber,
+    }),
+  );
+
+export const parseGetLocalReviewWorkspaceResponse = (
+  input: unknown,
+): GetLocalReviewWorkspaceResponse =>
+  parseLocalReviewMessage(
+    getLocalReviewWorkspaceResponseSchema,
+    input,
+    'local review workspace response',
+    responseMetadata,
+  );
+
+export const parseSavePullRequestNoteRequest = (
+  input: unknown,
+): SavePullRequestNoteRequest =>
+  parseLocalReviewMessage(
+    savePullRequestNoteRequestSchema,
+    input,
+    'pull request note save request',
+    (request) => ({
+      correlationId: request.correlationId,
+      owner: request.context.owner,
+      repository: request.context.repository,
+      pullNumber: request.context.pullNumber,
+      bodyLength: request.body.length,
+    }),
+  );
+
+export const parseSavePullRequestNoteResponse = (
+  input: unknown,
+): SavePullRequestNoteResponse =>
+  parseLocalReviewMessage(
+    savePullRequestNoteResponseSchema,
+    input,
+    'pull request note save response',
+    responseMetadata,
+  );
+
+export const parseListReviewTemplatesRequest = (
+  input: unknown,
+): ListReviewTemplatesRequest =>
+  parseLocalReviewMessage(
+    listReviewTemplatesRequestSchema,
+    input,
+    'review template list request',
+    (request) => ({ correlationId: request.correlationId }),
+  );
+
+export const parseListReviewTemplatesResponse = (
+  input: unknown,
+): ListReviewTemplatesResponse =>
+  parseLocalReviewMessage(
+    listReviewTemplatesResponseSchema,
+    input,
+    'review template list response',
+    responseMetadata,
+  );
+
+export const parseUpsertReviewTemplateRequest = (
+  input: unknown,
+): UpsertReviewTemplateRequest =>
+  parseLocalReviewMessage(
+    upsertReviewTemplateRequestSchema,
+    input,
+    'review template upsert request',
+    (request) => ({
+      correlationId: request.correlationId,
+      templateId: request.template.id,
+      titleLength: request.template.title.length,
+      bodyLength: request.template.body.length,
+    }),
+  );
+
+export const parseUpsertReviewTemplateResponse = (
+  input: unknown,
+): UpsertReviewTemplateResponse =>
+  parseLocalReviewMessage(
+    upsertReviewTemplateResponseSchema,
+    input,
+    'review template upsert response',
+    responseMetadata,
+  );
+
+export const parseDeleteReviewTemplateRequest = (
+  input: unknown,
+): DeleteReviewTemplateRequest =>
+  parseLocalReviewMessage(
+    deleteReviewTemplateRequestSchema,
+    input,
+    'review template delete request',
+    (request) => ({
+      correlationId: request.correlationId,
+      templateId: request.templateId,
+    }),
+  );
+
+export const parseDeleteReviewTemplateResponse = (
+  input: unknown,
+): DeleteReviewTemplateResponse =>
+  parseLocalReviewMessage(
+    deleteReviewTemplateResponseSchema,
+    input,
+    'review template delete response',
+    responseMetadata,
+  );
 
 export const createCorrelationId = (): string => {
   return crypto.randomUUID();

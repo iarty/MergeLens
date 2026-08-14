@@ -1,5 +1,9 @@
 import { createLogger } from '@/shared/logging/logger';
 import {
+  parseUpsertReviewTemplateRequest,
+  parseUpsertReviewTemplateResponse,
+} from '@/shared/messaging/protocol';
+import {
   normalizeReviewTemplateDraft,
   sortReviewTemplates,
   type ReviewTemplate,
@@ -11,8 +15,8 @@ import type {
   UpsertReviewTemplateResult,
 } from './contracts';
 import {
+  getRequestCorrelationId,
   getErrorName,
-  resolveCorrelationId,
   toLocalReviewError,
 } from './operation';
 
@@ -26,9 +30,27 @@ export const createUpsertReviewTemplate = (
   const createId = dependencies.createId ?? (() => crypto.randomUUID());
 
   return async (
-    request: UpsertReviewTemplateRequest,
+    requestInput: UpsertReviewTemplateRequest,
   ): Promise<UpsertReviewTemplateResult> => {
-    const correlationId = resolveCorrelationId(request.correlationId);
+    let request: UpsertReviewTemplateRequest;
+
+    try {
+      request = parseUpsertReviewTemplateRequest(requestInput);
+    } catch (error) {
+      logger.warn('Rejected review template upsert at background boundary', {
+        errorName: getErrorName(error),
+      });
+      return parseUpsertReviewTemplateResponse({
+        status: 'error',
+        correlationId: getRequestCorrelationId(requestInput),
+        error: {
+          code: 'invalid-input',
+          message: 'Invalid review template upsert request',
+        },
+      });
+    }
+
+    const correlationId = request.correlationId;
     logger.info('Handling review template upsert', { correlationId });
 
     try {
@@ -54,11 +76,11 @@ export const createUpsertReviewTemplate = (
         templateId: savedTemplate.id,
         templateCount: templates.length,
       });
-      return {
+      return parseUpsertReviewTemplateResponse({
         status: 'success',
         correlationId,
         data: { template: savedTemplate, templates },
-      };
+      });
     } catch (error) {
       const localReviewError = toLocalReviewError(error);
       const log = localReviewError.code === 'storage-unavailable'
@@ -69,7 +91,11 @@ export const createUpsertReviewTemplate = (
         code: localReviewError.code,
         errorName: getErrorName(error),
       });
-      return { status: 'error', correlationId, error: localReviewError };
+      return parseUpsertReviewTemplateResponse({
+        status: 'error',
+        correlationId,
+        error: localReviewError,
+      });
     }
   };
 };

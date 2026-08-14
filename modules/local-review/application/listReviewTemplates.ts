@@ -1,4 +1,8 @@
 import { createLogger } from '@/shared/logging/logger';
+import {
+  parseListReviewTemplatesRequest,
+  parseListReviewTemplatesResponse,
+} from '@/shared/messaging/protocol';
 import { sortReviewTemplates } from '../domain/LocalReview';
 import type { LocalReviewRepository } from '../ports/LocalReviewRepository';
 import type {
@@ -6,8 +10,8 @@ import type {
   ListReviewTemplatesResult,
 } from './contracts';
 import {
+  getRequestCorrelationId,
   getErrorName,
-  resolveCorrelationId,
   toLocalReviewError,
 } from './operation';
 
@@ -17,9 +21,27 @@ export const createListReviewTemplates = (
   repository: LocalReviewRepository,
 ) => {
   return async (
-    request: ListReviewTemplatesRequest,
+    requestInput: ListReviewTemplatesRequest,
   ): Promise<ListReviewTemplatesResult> => {
-    const correlationId = resolveCorrelationId(request.correlationId);
+    let request: ListReviewTemplatesRequest;
+
+    try {
+      request = parseListReviewTemplatesRequest(requestInput);
+    } catch (error) {
+      logger.warn('Rejected review template list request at background boundary', {
+        errorName: getErrorName(error),
+      });
+      return parseListReviewTemplatesResponse({
+        status: 'error',
+        correlationId: getRequestCorrelationId(requestInput),
+        error: {
+          code: 'invalid-input',
+          message: 'Invalid review template list request',
+        },
+      });
+    }
+
+    const correlationId = request.correlationId;
     logger.info('Handling review template list request', { correlationId });
 
     try {
@@ -28,11 +50,11 @@ export const createListReviewTemplates = (
         correlationId,
         templateCount: templates.length,
       });
-      return {
+      return parseListReviewTemplatesResponse({
         status: 'success',
         correlationId,
         data: { templates },
-      };
+      });
     } catch (error) {
       const localReviewError = toLocalReviewError(error);
       const log = localReviewError.code === 'storage-unavailable'
@@ -43,7 +65,11 @@ export const createListReviewTemplates = (
         code: localReviewError.code,
         errorName: getErrorName(error),
       });
-      return { status: 'error', correlationId, error: localReviewError };
+      return parseListReviewTemplatesResponse({
+        status: 'error',
+        correlationId,
+        error: localReviewError,
+      });
     }
   };
 };
