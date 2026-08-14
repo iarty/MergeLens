@@ -4,6 +4,7 @@ export type CommandId =
   | 'open-current-pull-request'
   | 'open-repository'
   | 'open-actions'
+  | 'open-local-review-workspace'
   | 'open-settings'
   | 'refresh-pull-request-toolbar';
 
@@ -30,6 +31,7 @@ export interface CommandExecutionResult {
 export interface CommandDependencies {
   navigate: (url: string) => void;
   openSettings: () => Promise<void>;
+  openLocalReviewWorkspace: () => Promise<void>;
   refreshPullRequestToolbar: () => Promise<void>;
 }
 

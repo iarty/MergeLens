@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import type { LocalReviewController } from '@/features/local-review/types';
 import { PRToolbar } from '@/features/pr-toolbar/PRToolbar';
 import type { ToolbarData } from '@/shared/messaging/schemas';
 
@@ -28,7 +29,96 @@ const toolbarData: ToolbarData = {
   actionsUrl: 'https://github.com/facebook/react/actions',
 };
 
+const createLocalReviewController = (): LocalReviewController => {
+  const state = {
+    context: {
+      owner: 'facebook',
+      repository: 'react',
+      pullNumber: 42,
+      prKey: 'facebook/react#42',
+    },
+    generation: 1,
+    revision: 0,
+    loadStatus: 'loading' as const,
+    saveStatus: 'idle' as const,
+    clipboardStatus: 'idle' as const,
+    draft: '',
+    templates: [],
+    loadError: null,
+    saveError: null,
+    clipboardError: null,
+    validationMessage: null,
+  };
+
+  return {
+    getState: () => state,
+    subscribe: () => () => {},
+    reconcileContext: vi.fn(),
+    setDraft: vi.fn(),
+    insertTemplate: vi.fn(() => ({ inserted: false, cursorPosition: 0 })),
+    retry: vi.fn(),
+    copyDraft: vi.fn().mockResolvedValue(undefined),
+    flush: vi.fn().mockResolvedValue(undefined),
+    dispose: vi.fn().mockResolvedValue(undefined),
+  };
+};
+
 describe('PRToolbar', () => {
+  it('keeps the Notes action available across PR data states', () => {
+    const controller = createLocalReviewController();
+    const onToggleLocalReview = vi.fn();
+    const { rerender } = render(
+      <PRToolbar
+        state={{ status: 'loading' }}
+        localReviewController={controller}
+        onToggleLocalReview={onToggleLocalReview}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Notes' })).toBeVisible();
+
+    rerender(
+      <PRToolbar
+        state={{
+          status: 'error',
+          error: { code: 'missing-token', message: 'Token required' },
+        }}
+        localReviewController={controller}
+        onToggleLocalReview={onToggleLocalReview}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Notes' })).toBeVisible();
+
+    rerender(
+      <PRToolbar
+        state={{ status: 'success', data: toolbarData }}
+        localReviewController={controller}
+        onToggleLocalReview={onToggleLocalReview}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Notes' }));
+    expect(onToggleLocalReview).toHaveBeenCalledOnce();
+  });
+
+  it('renders the local review panel inside the toolbar when opened', () => {
+    render(
+      <PRToolbar
+        state={{ status: 'loading' }}
+        localReviewController={createLocalReviewController()}
+        isLocalReviewOpen
+        onToggleLocalReview={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Notes' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(
+      screen.getByRole('region', { name: 'Local review workspace' }),
+    ).toBeVisible();
+  });
+
   it('renders an accessible loading state', () => {
     render(<PRToolbar state={{ status: 'loading' }} />);
 

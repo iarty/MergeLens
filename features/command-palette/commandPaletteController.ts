@@ -28,6 +28,7 @@ export interface PaletteControllerUi {
 
 export interface CommandPaletteControllerOptions {
   navigate?: (url: string) => void;
+  openLocalReviewWorkspace?: () => Promise<void>;
   openSettings?: () => Promise<void>;
   refreshPullRequestToolbar?: () => Promise<void>;
   registerOpenRequest?: (open: () => void) => () => void;
@@ -69,6 +70,9 @@ export const createCommandPaletteController = (
     }),
     openSettings: options.openSettings ?? (async () => {
       await sendMessage('openOptionsPage');
+    }),
+    openLocalReviewWorkspace: options.openLocalReviewWorkspace ?? (async () => {
+      logger.warn('Local review workspace callback is unavailable');
     }),
     refreshPullRequestToolbar: options.refreshPullRequestToolbar ?? (async () => {
       logger.warn('Toolbar refresh callback is unavailable');

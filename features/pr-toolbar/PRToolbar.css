@@ -40,8 +40,21 @@
 }
 
 .pr-toolbar__content {
+  display: flex;
   min-width: 0;
+  align-items: center;
+  gap: 12px;
   padding: 9px 12px;
+}
+
+.pr-toolbar__state {
+  min-width: 0;
+  flex: 1;
+}
+
+.pr-toolbar__local-review {
+  grid-column: 1 / -1;
+  min-width: 0;
 }
 
 .pr-toolbar__message,
@@ -120,7 +133,8 @@
 }
 
 .pr-toolbar__button,
-.pr-toolbar__actions-link {
+.pr-toolbar__actions-link,
+.pr-toolbar__notes-button {
   min-height: 28px;
   border: 1px solid #d0d7de;
   border-radius: 6px;
@@ -136,8 +150,23 @@
 }
 
 .pr-toolbar__button:hover,
-.pr-toolbar__actions-link:hover {
+.pr-toolbar__actions-link:hover,
+.pr-toolbar__notes-button:hover {
   background: #f3f4f6;
+}
+
+.pr-toolbar__notes-button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.pr-toolbar__notes-button[aria-expanded="true"] {
+  border-color: #0969da;
+  background: #ddf4ff;
+  color: #0969da;
 }
 
 .pr-toolbar__quick-links,
@@ -209,6 +238,7 @@
 
 .pr-toolbar__button:focus-visible,
 .pr-toolbar__actions-link:focus-visible,
+.pr-toolbar__notes-button:focus-visible,
 .pr-toolbar__title:focus-visible,
 .pr-toolbar__check:focus-visible,
 .pr-toolbar__quick-link:focus-visible,
@@ -318,6 +348,15 @@
 }
 
 @media (max-width: 720px) {
+  .pr-toolbar__content {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pr-toolbar__notes-button {
+    align-self: flex-end;
+  }
+
   .pr-toolbar__success {
     grid-template-columns: minmax(0, 1fr) auto;
   }

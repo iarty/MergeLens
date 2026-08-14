@@ -16,6 +16,7 @@ export default defineContentScript({
     const toolbar = await mountPrToolbar(ctx);
     const paletteUi = await mountCommandPaletteUi(ctx);
     createCommandPaletteController(ctx, paletteUi, window, {
+      openLocalReviewWorkspace: toolbar.openLocalReviewWorkspace,
       refreshPullRequestToolbar: toolbar.refresh,
       registerOpenRequest: (open) =>
         onMessage('openCommandPalette', () => {

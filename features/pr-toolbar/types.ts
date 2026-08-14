@@ -1,3 +1,4 @@
+import type { LocalReviewController } from '@/features/local-review/types';
 import type {
   ToolbarData,
   ToolbarErrorCode,
@@ -22,6 +23,9 @@ export type PRToolbarState =
 
 export interface PRToolbarProps {
   state: PRToolbarState;
+  localReviewController?: LocalReviewController;
+  isLocalReviewOpen?: boolean;
   onOpenSettings?: () => void;
   onRetry?: () => void;
+  onToggleLocalReview?: () => void;
 }

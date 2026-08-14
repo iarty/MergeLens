@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { LocalReviewController } from '@/features/local-review/types';
 import { mountPrToolbar } from '@/features/pr-toolbar/mountPrToolbar';
-import type { PullRequestPageContext } from '@/shared/github/context/PageContext';
 import type { PRToolbarState } from '@/features/pr-toolbar/types';
+import type { PullRequestPageContext } from '@/shared/github/context/PageContext';
 
 const context: PullRequestPageContext = {
   kind: 'pull-request',
@@ -60,7 +61,110 @@ const createFakeUi = () => ({
   render: vi.fn<(state: PRToolbarState) => void>(),
 });
 
+const createFakeReviewController = (): LocalReviewController => ({
+  getState: vi.fn(),
+  subscribe: vi.fn(() => () => {}),
+  reconcileContext: vi.fn(),
+  setDraft: vi.fn(),
+  insertTemplate: vi.fn(() => ({ inserted: false, cursorPosition: 0 })),
+  retry: vi.fn(),
+  copyDraft: vi.fn().mockResolvedValue(undefined),
+  flush: vi.fn().mockResolvedValue(undefined),
+  dispose: vi.fn().mockResolvedValue(undefined),
+});
+
 describe('mountPrToolbar', () => {
+  it('starts local review independently while toolbar data is still pending', async () => {
+    const fakeContext = createFakeContext();
+    const fakeUi = createFakeUi();
+    const reviewController = createFakeReviewController();
+    const createReviewController = vi.fn(() => reviewController);
+    let resolveToolbarRequest: ((value: typeof successResponse) => void) | undefined;
+    const toolbarRequest = new Promise<typeof successResponse>((resolve) => {
+      resolveToolbarRequest = resolve;
+    });
+    const toolbar = await mountPrToolbar(fakeContext.context as never, {
+      createUi: vi.fn().mockResolvedValue(fakeUi),
+      createReviewController,
+      sendToolbarMessage: vi.fn().mockReturnValue(toolbarRequest),
+      findAnchor: () => document.body,
+    });
+
+    const reconciliation = toolbar.reconcile(context);
+    await vi.waitFor(() => {
+      expect(createReviewController).toHaveBeenCalledWith(context);
+    });
+    await vi.waitFor(() => {
+      expect(fakeUi.render).toHaveBeenCalledWith({ status: 'loading' });
+    });
+
+    resolveToolbarRequest?.(successResponse);
+    await reconciliation;
+  });
+
+  it('preserves local review for the same PR and reconciles a different PR', async () => {
+    const fakeContext = createFakeContext();
+    const fakeUi = createFakeUi();
+    const reviewController = createFakeReviewController();
+    const createReviewController = vi.fn(() => reviewController);
+    const toolbar = await mountPrToolbar(fakeContext.context as never, {
+      createUi: vi.fn().mockResolvedValue(fakeUi),
+      createReviewController,
+      sendToolbarMessage: vi.fn().mockResolvedValue(successResponse),
+      findAnchor: () => document.body,
+    });
+
+    await toolbar.reconcile(context);
+    await toolbar.reconcile({ ...context, url: `${context.url}/files` });
+    await toolbar.reconcile(nextContext);
+
+    expect(createReviewController).toHaveBeenCalledOnce();
+    expect(reviewController.reconcileContext).toHaveBeenCalledOnce();
+    expect(reviewController.reconcileContext).toHaveBeenCalledWith(nextContext);
+    expect(fakeUi.remove).not.toHaveBeenCalled();
+  });
+
+  it('opens local review through the public toolbar action and ignores duplicates', async () => {
+    const fakeContext = createFakeContext();
+    const fakeUi = createFakeUi();
+    let isLocalReviewOpen: (() => boolean) | undefined;
+    const toolbar = await mountPrToolbar(fakeContext.context as never, {
+      createUi: async (_ctx, callbacks) => {
+        isLocalReviewOpen = callbacks.isLocalReviewOpen;
+        return fakeUi;
+      },
+      createReviewController: () => createFakeReviewController(),
+      sendToolbarMessage: vi.fn().mockResolvedValue(successResponse),
+      findAnchor: () => document.body,
+    });
+
+    await toolbar.reconcile(context);
+    await toolbar.openLocalReviewWorkspace();
+    const renderCountAfterOpen = fakeUi.render.mock.calls.length;
+    await toolbar.openLocalReviewWorkspace();
+
+    expect(isLocalReviewOpen?.()).toBe(true);
+    expect(fakeUi.render).toHaveBeenCalledTimes(renderCountAfterOpen);
+  });
+
+  it('disposes local review when leaving pull request context', async () => {
+    const fakeContext = createFakeContext();
+    const fakeUi = createFakeUi();
+    const reviewController = createFakeReviewController();
+    const toolbar = await mountPrToolbar(fakeContext.context as never, {
+      createUi: vi.fn().mockResolvedValue(fakeUi),
+      createReviewController: () => reviewController,
+      sendToolbarMessage: vi.fn().mockResolvedValue(successResponse),
+      findAnchor: () => document.body,
+    });
+
+    await toolbar.reconcile(context);
+    await toolbar.reconcile(null);
+
+    expect(reviewController.dispose).toHaveBeenCalledOnce();
+    expect(fakeUi.remove).toHaveBeenCalledOnce();
+  });
+
   it('mounts once and ignores duplicate reconciliation for the same PR', async () => {
     const fakeContext = createFakeContext();
     const fakeUi = createFakeUi();
