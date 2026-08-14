@@ -1,0 +1,258 @@
+.local-review {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+  padding: 14px 16px 16px;
+  border-top: 1px solid #d0d7de;
+  background: #ffffff;
+  color: #1f2328;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  letter-spacing: 0;
+  line-height: 1.45;
+}
+
+.local-review *,
+.local-review *::before,
+.local-review *::after {
+  box-sizing: border-box;
+}
+
+.local-review__header,
+.local-review__label-row,
+.local-review__tools,
+.local-review__template-controls,
+.local-review__error,
+.local-review__inline-error {
+  display: flex;
+  align-items: center;
+}
+
+.local-review__header {
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.local-review__header h2,
+.local-review__header p {
+  margin: 0;
+}
+
+.local-review__header h2 {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.local-review__header p,
+.local-review__label-row span,
+.local-review__feedback {
+  color: #59636e;
+  font-size: 12px;
+}
+
+.local-review__save-status {
+  flex: 0 0 auto;
+  color: #59636e;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.local-review__save-status--dirty,
+.local-review__save-status--saving {
+  color: #9a6700;
+}
+
+.local-review__save-status--saved {
+  color: #1a7f37;
+}
+
+.local-review__save-status--error,
+.local-review__validation,
+.local-review__inline-error {
+  color: #cf222e;
+}
+
+.local-review__editor-group,
+.local-review__template-tool {
+  display: grid;
+  gap: 6px;
+}
+
+.local-review__label-row {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.local-review label {
+  font-weight: 600;
+}
+
+.local-review__editor,
+.local-review select {
+  width: 100%;
+  border: 1px solid #afb8c1;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1f2328;
+  font: inherit;
+}
+
+.local-review__editor {
+  min-height: 142px;
+  resize: vertical;
+  padding: 9px 10px;
+  line-height: 1.5;
+}
+
+.local-review__editor::placeholder {
+  color: #6e7781;
+}
+
+.local-review select {
+  min-width: 0;
+  height: 32px;
+  padding: 4px 28px 4px 8px;
+}
+
+.local-review__tools {
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.local-review__template-tool {
+  min-width: 0;
+  flex: 1;
+}
+
+.local-review__template-controls {
+  min-width: 0;
+  gap: 8px;
+}
+
+.local-review__button,
+.local-review__text-button {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+.local-review__button {
+  flex: 0 0 auto;
+  border: 1px solid #d0d7de;
+  padding: 5px 10px;
+  background: #f6f8fa;
+  color: #1f2328;
+}
+
+.local-review__button:hover:not(:disabled) {
+  background: #eaeef2;
+}
+
+.local-review__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.local-review__copy {
+  align-self: end;
+}
+
+.local-review__text-button {
+  border: 0;
+  padding: 0 4px;
+  background: transparent;
+  color: #0969da;
+}
+
+.local-review__editor:focus,
+.local-review select:focus,
+.local-review__button:focus-visible,
+.local-review__text-button:focus-visible {
+  outline: 2px solid #0969da;
+  outline-offset: 2px;
+}
+
+.local-review__validation,
+.local-review__feedback {
+  min-height: 18px;
+  margin: 6px 0 0;
+}
+
+.local-review__inline-error {
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.local-review__loading {
+  display: flex;
+  min-height: 96px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #59636e;
+}
+
+.local-review__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #afb8c1;
+  border-top-color: #0969da;
+  border-radius: 50%;
+  animation: local-review-spin 0.8s linear infinite;
+}
+
+.local-review__error {
+  min-height: 76px;
+  justify-content: space-between;
+  gap: 16px;
+  color: #cf222e;
+}
+
+.local-review__error > div {
+  display: grid;
+  gap: 2px;
+}
+
+.local-review__error span {
+  color: #59636e;
+  font-size: 12px;
+}
+
+@keyframes local-review-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .local-review__tools,
+  .local-review__header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .local-review__save-status {
+    align-self: flex-start;
+  }
+
+  .local-review__copy {
+    align-self: stretch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .local-review__spinner {
+    animation: none;
+  }
+}
