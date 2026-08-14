@@ -19,6 +19,134 @@ export const reviewInboxRequestSchema = z.object({
   correlationId: z.string().min(1).max(128),
 });
 
+const localReviewContextSchema = z.object({
+  owner: z.string().trim().min(1).max(100),
+  repository: z.string().trim().min(1).max(100),
+  pullNumber: z.number().int().positive(),
+});
+
+const localReviewCorrelationIdSchema = z.string().min(1).max(128);
+
+export const localReviewErrorCodeSchema = z.enum([
+  'invalid-input',
+  'quota-exceeded',
+  'storage-unavailable',
+]);
+
+export const localReviewErrorSchema = z.object({
+  code: localReviewErrorCodeSchema,
+  message: z.string().min(1).max(500),
+});
+
+export const pullRequestNoteSchema = z.object({
+  prKey: z.string().min(1).max(256),
+  owner: z.string().min(1).max(100),
+  repository: z.string().min(1).max(100),
+  pullNumber: z.number().int().positive(),
+  body: z.string().max(50_000),
+  updatedAt: z.iso.datetime({ offset: true }),
+});
+
+export const reviewTemplateSchema = z.object({
+  id: z.string().min(1).max(128),
+  title: z.string().trim().min(1).max(80),
+  body: z.string().min(1).max(20_000),
+  createdAt: z.iso.datetime({ offset: true }),
+  updatedAt: z.iso.datetime({ offset: true }),
+});
+
+export const getLocalReviewWorkspaceRequestSchema = z.object({
+  correlationId: localReviewCorrelationIdSchema,
+  context: localReviewContextSchema,
+});
+
+export const savePullRequestNoteRequestSchema = z.object({
+  correlationId: localReviewCorrelationIdSchema,
+  context: localReviewContextSchema,
+  body: z.string().max(50_000),
+});
+
+export const listReviewTemplatesRequestSchema = z.object({
+  correlationId: localReviewCorrelationIdSchema,
+});
+
+export const upsertReviewTemplateRequestSchema = z.object({
+  correlationId: localReviewCorrelationIdSchema,
+  template: z.object({
+    id: z.string().trim().min(1).max(128).optional(),
+    title: z.string().trim().min(1).max(80),
+    body: z.string().min(1).max(20_000),
+  }),
+});
+
+export const deleteReviewTemplateRequestSchema = z.object({
+  correlationId: localReviewCorrelationIdSchema,
+  templateId: z.string().trim().min(1).max(128),
+});
+
+const localReviewErrorResponseSchema = z.object({
+  status: z.literal('error'),
+  correlationId: localReviewCorrelationIdSchema,
+  error: localReviewErrorSchema,
+});
+
+export const getLocalReviewWorkspaceResponseSchema = z.discriminatedUnion(
+  'status',
+  [
+    z.object({
+      status: z.literal('success'),
+      correlationId: localReviewCorrelationIdSchema,
+      data: z.object({
+        note: pullRequestNoteSchema.nullable(),
+        templates: z.array(reviewTemplateSchema).max(100),
+      }),
+    }),
+    localReviewErrorResponseSchema,
+  ],
+);
+
+export const savePullRequestNoteResponseSchema = z.discriminatedUnion(
+  'status',
+  [
+    z.object({
+      status: z.literal('success'),
+      correlationId: localReviewCorrelationIdSchema,
+      data: z.object({ note: pullRequestNoteSchema.nullable() }),
+    }),
+    localReviewErrorResponseSchema,
+  ],
+);
+
+export const listReviewTemplatesResponseSchema = z.discriminatedUnion(
+  'status',
+  [
+    z.object({
+      status: z.literal('success'),
+      correlationId: localReviewCorrelationIdSchema,
+      data: z.object({ templates: z.array(reviewTemplateSchema).max(100) }),
+    }),
+    localReviewErrorResponseSchema,
+  ],
+);
+
+export const upsertReviewTemplateResponseSchema = z.discriminatedUnion(
+  'status',
+  [
+    z.object({
+      status: z.literal('success'),
+      correlationId: localReviewCorrelationIdSchema,
+      data: z.object({
+        template: reviewTemplateSchema,
+        templates: z.array(reviewTemplateSchema).max(100),
+      }),
+    }),
+    localReviewErrorResponseSchema,
+  ],
+);
+
+export const deleteReviewTemplateResponseSchema =
+  listReviewTemplatesResponseSchema;
+
 export const openOptionsPageResponseSchema = z.object({
   status: z.literal('success'),
 });
@@ -204,4 +332,34 @@ export type ReviewInboxResponse = z.infer<typeof reviewInboxResponseSchema>;
 export type ReviewInboxData = z.infer<typeof reviewInboxDataSchema>;
 export type ReviewInboxPullRequest = z.infer<
   typeof reviewInboxPullRequestSchema
+>;
+export type GetLocalReviewWorkspaceRequest = z.infer<
+  typeof getLocalReviewWorkspaceRequestSchema
+>;
+export type GetLocalReviewWorkspaceResponse = z.infer<
+  typeof getLocalReviewWorkspaceResponseSchema
+>;
+export type SavePullRequestNoteRequest = z.infer<
+  typeof savePullRequestNoteRequestSchema
+>;
+export type SavePullRequestNoteResponse = z.infer<
+  typeof savePullRequestNoteResponseSchema
+>;
+export type ListReviewTemplatesRequest = z.infer<
+  typeof listReviewTemplatesRequestSchema
+>;
+export type ListReviewTemplatesResponse = z.infer<
+  typeof listReviewTemplatesResponseSchema
+>;
+export type UpsertReviewTemplateRequest = z.infer<
+  typeof upsertReviewTemplateRequestSchema
+>;
+export type UpsertReviewTemplateResponse = z.infer<
+  typeof upsertReviewTemplateResponseSchema
+>;
+export type DeleteReviewTemplateRequest = z.infer<
+  typeof deleteReviewTemplateRequestSchema
+>;
+export type DeleteReviewTemplateResponse = z.infer<
+  typeof deleteReviewTemplateResponseSchema
 >;

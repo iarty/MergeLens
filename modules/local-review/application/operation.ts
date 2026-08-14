@@ -4,10 +4,22 @@ import {
   type LocalReviewError,
 } from '../domain/LocalReview';
 
-export const resolveCorrelationId = (correlationId: string): string => {
-  return correlationId.trim().length > 0
+export const resolveCorrelationId = (correlationId: unknown): string => {
+  return typeof correlationId === 'string' &&
+    correlationId.length >= 1 &&
+    correlationId.length <= 128
     ? correlationId
-    : 'invalid-correlation-id';
+    : 'invalid-request';
+};
+
+export const getRequestCorrelationId = (request: unknown): string => {
+  if (typeof request !== 'object' || request === null) {
+    return resolveCorrelationId(undefined);
+  }
+
+  return resolveCorrelationId(
+    (request as { correlationId?: unknown }).correlationId,
+  );
 };
 
 export const toLocalReviewError = (error: unknown): LocalReviewError => {

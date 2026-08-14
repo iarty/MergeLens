@@ -1,5 +1,9 @@
 import { createLogger } from '@/shared/logging/logger';
 import {
+  parseDeleteReviewTemplateRequest,
+  parseDeleteReviewTemplateResponse,
+} from '@/shared/messaging/protocol';
+import {
   LocalReviewValidationError,
   sortReviewTemplates,
 } from '../domain/LocalReview';
@@ -9,8 +13,8 @@ import type {
   DeleteReviewTemplateResult,
 } from './contracts';
 import {
+  getRequestCorrelationId,
   getErrorName,
-  resolveCorrelationId,
   toLocalReviewError,
 } from './operation';
 
@@ -20,9 +24,27 @@ export const createDeleteReviewTemplate = (
   repository: LocalReviewRepository,
 ) => {
   return async (
-    request: DeleteReviewTemplateRequest,
+    requestInput: DeleteReviewTemplateRequest,
   ): Promise<DeleteReviewTemplateResult> => {
-    const correlationId = resolveCorrelationId(request.correlationId);
+    let request: DeleteReviewTemplateRequest;
+
+    try {
+      request = parseDeleteReviewTemplateRequest(requestInput);
+    } catch (error) {
+      logger.warn('Rejected review template deletion at background boundary', {
+        errorName: getErrorName(error),
+      });
+      return parseDeleteReviewTemplateResponse({
+        status: 'error',
+        correlationId: getRequestCorrelationId(requestInput),
+        error: {
+          code: 'invalid-input',
+          message: 'Invalid review template deletion request',
+        },
+      });
+    }
+
+    const correlationId = request.correlationId;
     logger.info('Handling review template deletion', { correlationId });
 
     try {
@@ -45,11 +67,11 @@ export const createDeleteReviewTemplate = (
         templateId,
         templateCount: templates.length,
       });
-      return {
+      return parseDeleteReviewTemplateResponse({
         status: 'success',
         correlationId,
         data: { templates },
-      };
+      });
     } catch (error) {
       const localReviewError = toLocalReviewError(error);
       const log = localReviewError.code === 'storage-unavailable'
@@ -60,7 +82,11 @@ export const createDeleteReviewTemplate = (
         code: localReviewError.code,
         errorName: getErrorName(error),
       });
-      return { status: 'error', correlationId, error: localReviewError };
+      return parseDeleteReviewTemplateResponse({
+        status: 'error',
+        correlationId,
+        error: localReviewError,
+      });
     }
   };
 };

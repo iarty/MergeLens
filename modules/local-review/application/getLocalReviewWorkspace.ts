@@ -1,5 +1,9 @@
 import { createLogger } from '@/shared/logging/logger';
 import {
+  parseGetLocalReviewWorkspaceRequest,
+  parseGetLocalReviewWorkspaceResponse,
+} from '@/shared/messaging/protocol';
+import {
   createPullRequestKey,
   sortReviewTemplates,
 } from '../domain/LocalReview';
@@ -9,8 +13,8 @@ import type {
   GetLocalReviewWorkspaceResult,
 } from './contracts';
 import {
+  getRequestCorrelationId,
   getErrorName,
-  resolveCorrelationId,
   toLocalReviewError,
 } from './operation';
 
@@ -20,9 +24,27 @@ export const createGetLocalReviewWorkspace = (
   repository: LocalReviewRepository,
 ) => {
   return async (
-    request: GetLocalReviewWorkspaceRequest,
+    requestInput: GetLocalReviewWorkspaceRequest,
   ): Promise<GetLocalReviewWorkspaceResult> => {
-    const correlationId = resolveCorrelationId(request.correlationId);
+    let request: GetLocalReviewWorkspaceRequest;
+
+    try {
+      request = parseGetLocalReviewWorkspaceRequest(requestInput);
+    } catch (error) {
+      logger.warn('Rejected local review workspace request at background boundary', {
+        errorName: getErrorName(error),
+      });
+      return parseGetLocalReviewWorkspaceResponse({
+        status: 'error',
+        correlationId: getRequestCorrelationId(requestInput),
+        error: {
+          code: 'invalid-input',
+          message: 'Invalid local review workspace request',
+        },
+      });
+    }
+
+    const correlationId = request.correlationId;
     logger.info('Handling local review workspace request', { correlationId });
 
     try {
@@ -42,11 +64,11 @@ export const createGetLocalReviewWorkspace = (
         hasNote: Boolean(note),
         templateCount: sortedTemplates.length,
       });
-      return {
+      return parseGetLocalReviewWorkspaceResponse({
         status: 'success',
         correlationId,
         data: { note, templates: sortedTemplates },
-      };
+      });
     } catch (error) {
       const localReviewError = toLocalReviewError(error);
       const log = localReviewError.code === 'storage-unavailable'
@@ -57,7 +79,11 @@ export const createGetLocalReviewWorkspace = (
         code: localReviewError.code,
         errorName: getErrorName(error),
       });
-      return { status: 'error', correlationId, error: localReviewError };
+      return parseGetLocalReviewWorkspaceResponse({
+        status: 'error',
+        correlationId,
+        error: localReviewError,
+      });
     }
   };
 };

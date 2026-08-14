@@ -1,5 +1,9 @@
 import { createLogger } from '@/shared/logging/logger';
 import {
+  parseSavePullRequestNoteRequest,
+  parseSavePullRequestNoteResponse,
+} from '@/shared/messaging/protocol';
+import {
   createPullRequestKey,
   normalizePullRequestNoteBody,
   type PullRequestNote,
@@ -11,8 +15,8 @@ import type {
   SavePullRequestNoteResult,
 } from './contracts';
 import {
+  getRequestCorrelationId,
   getErrorName,
-  resolveCorrelationId,
   toLocalReviewError,
 } from './operation';
 
@@ -25,9 +29,27 @@ export const createSavePullRequestNote = (
   const now = dependencies.now ?? (() => new Date());
 
   return async (
-    request: SavePullRequestNoteRequest,
+    requestInput: SavePullRequestNoteRequest,
   ): Promise<SavePullRequestNoteResult> => {
-    const correlationId = resolveCorrelationId(request.correlationId);
+    let request: SavePullRequestNoteRequest;
+
+    try {
+      request = parseSavePullRequestNoteRequest(requestInput);
+    } catch (error) {
+      logger.warn('Rejected pull request note save at background boundary', {
+        errorName: getErrorName(error),
+      });
+      return parseSavePullRequestNoteResponse({
+        status: 'error',
+        correlationId: getRequestCorrelationId(requestInput),
+        error: {
+          code: 'invalid-input',
+          message: 'Invalid pull request note save request',
+        },
+      });
+    }
+
+    const correlationId = request.correlationId;
     logger.info('Handling pull request note save', { correlationId });
 
     try {
@@ -50,11 +72,11 @@ export const createSavePullRequestNote = (
         prKey: identity.prKey,
         isPresent: Boolean(savedNote),
       });
-      return {
+      return parseSavePullRequestNoteResponse({
         status: 'success',
         correlationId,
         data: { note: savedNote },
-      };
+      });
     } catch (error) {
       const localReviewError = toLocalReviewError(error);
       const log = localReviewError.code === 'storage-unavailable'
@@ -65,7 +87,11 @@ export const createSavePullRequestNote = (
         code: localReviewError.code,
         errorName: getErrorName(error),
       });
-      return { status: 'error', correlationId, error: localReviewError };
+      return parseSavePullRequestNoteResponse({
+        status: 'error',
+        correlationId,
+        error: localReviewError,
+      });
     }
   };
 };
