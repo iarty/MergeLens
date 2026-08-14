@@ -33,6 +33,15 @@ const successResponse = {
   },
 };
 
+const quickLinksResponse = {
+  status: 'success' as const,
+  correlationId: 'quick-1',
+  data: {
+    deployments: [],
+    configuredLinks: [{ id: 'docs', label: 'Docs', url: 'https://docs.example.com/' }],
+  },
+};
+
 const createFakeContext = () => {
   let invalidationHandler: (() => void) | undefined;
   return {
@@ -73,6 +82,101 @@ describe('mountPrToolbar', () => {
       status: 'success',
       data: successResponse.data,
     });
+  });
+
+  it('merges quick links after the primary toolbar response', async () => {
+    const fakeContext = createFakeContext();
+    const fakeUi = createFakeUi();
+    const sendQuickLinksMessage = vi.fn().mockResolvedValue(quickLinksResponse);
+    const toolbar = await mountPrToolbar(fakeContext.context as never, {
+      createUi: vi.fn().mockResolvedValue(fakeUi),
+      sendToolbarMessage: vi.fn().mockResolvedValue(successResponse),
+      sendQuickLinksMessage,
+      findAnchor: () => document.body,
+    });
+
+    await toolbar.reconcile(context);
+
+    expect(sendQuickLinksMessage).toHaveBeenCalledWith(
+      'getPullRequestQuickLinks',
+      expect.objectContaining({ context }),
+    );
+    expect(fakeUi.render).toHaveBeenLastCalledWith(expect.objectContaining({
+      status: 'success',
+      quickLinksStatus: 'success',
+      data: expect.objectContaining({ quickLinks: quickLinksResponse.data }),
+    }));
+  });
+
+  it('preserves primary toolbar data when quick links fail', async () => {
+    const fakeContext = createFakeContext();
+    const fakeUi = createFakeUi();
+    const toolbar = await mountPrToolbar(fakeContext.context as never, {
+      createUi: vi.fn().mockResolvedValue(fakeUi),
+      sendToolbarMessage: vi.fn().mockResolvedValue(successResponse),
+      sendQuickLinksMessage: vi.fn().mockResolvedValue({
+        status: 'error',
+        correlationId: 'quick-1',
+        error: { code: 'rate-limited', message: 'Try later' },
+      }),
+      findAnchor: () => document.body,
+    });
+
+    await toolbar.reconcile(context);
+
+    expect(fakeUi.render).toHaveBeenLastCalledWith(expect.objectContaining({
+      status: 'success',
+      data: successResponse.data,
+      quickLinksStatus: 'error',
+      quickLinksError: expect.objectContaining({ code: 'rate-limited' }),
+    }));
+  });
+
+  it('ignores a stale quick links failure after navigating to another PR', async () => {
+    const fakeContext = createFakeContext();
+    const fakeUi = createFakeUi();
+    let rejectFirstQuickLinksRequest: ((reason: Error) => void) | undefined;
+    const firstQuickLinksRequest = new Promise<never>((_resolve, reject) => {
+      rejectFirstQuickLinksRequest = reject;
+    });
+    const sendToolbarMessage = vi.fn()
+      .mockResolvedValueOnce(successResponse)
+      .mockResolvedValueOnce({
+        ...successResponse,
+        data: {
+          ...successResponse.data,
+          pullRequest: {
+            ...successResponse.data.pullRequest,
+            title: 'New pull request',
+            url: nextContext.url,
+          },
+        },
+      });
+    const sendQuickLinksMessage = vi.fn()
+      .mockReturnValueOnce(firstQuickLinksRequest)
+      .mockResolvedValueOnce(quickLinksResponse);
+    const toolbar = await mountPrToolbar(fakeContext.context as never, {
+      createUi: vi.fn().mockResolvedValue(fakeUi),
+      sendToolbarMessage,
+      sendQuickLinksMessage,
+      findAnchor: () => document.body,
+    });
+
+    const firstReconciliation = toolbar.reconcile(context);
+    await vi.waitFor(() => expect(sendQuickLinksMessage).toHaveBeenCalledOnce());
+    await toolbar.reconcile(nextContext);
+    rejectFirstQuickLinksRequest?.(new Error('stale request failed'));
+    await firstReconciliation;
+
+    expect(fakeUi.render).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        status: 'success',
+        quickLinksStatus: 'success',
+        data: expect.objectContaining({
+          pullRequest: expect.objectContaining({ title: 'New pull request' }),
+        }),
+      }),
+    );
   });
 
   it('reuses the UI and reloads data when navigating to another PR', async () => {

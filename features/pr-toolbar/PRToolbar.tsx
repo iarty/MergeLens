@@ -113,7 +113,13 @@ const ErrorState = ({
   );
 };
 
-const SuccessState = ({ data }: Extract<PRToolbarProps['state'], { status: 'success' }>) => {
+const SuccessState = ({
+  data,
+  quickLinksError,
+  quickLinksStatus,
+  onRetry,
+}: Extract<PRToolbarProps['state'], { status: 'success' }> &
+  Pick<PRToolbarProps, 'onRetry'>) => {
   const visibleChecks = data.checks.slice(0, 4);
   const remainingCheckCount = data.checks.length - visibleChecks.length;
 
@@ -187,6 +193,79 @@ const SuccessState = ({ data }: Extract<PRToolbarProps['state'], { status: 'succ
       >
         Actions
       </a>
+      {data.quickLinks ? (
+        <div className="pr-toolbar__quick-links" aria-label="Quick links and deployments">
+          {data.quickLinks.configuredLinks.map((link) => (
+            <a
+              className="pr-toolbar__quick-link"
+              href={link.url}
+              target="_blank"
+              rel="noreferrer"
+              key={link.id}
+            >
+              {link.label}
+            </a>
+          ))}
+          {data.quickLinks.deployments.map((deployment) => {
+            const content = (
+              <>
+                <span
+                  className={`pr-toolbar__deployment-dot pr-toolbar__deployment-dot--${deployment.state}`}
+                  aria-hidden="true"
+                />
+                <span>{deployment.environment}</span>
+                <span className="pr-toolbar__sr-only">{deployment.state}</span>
+              </>
+            );
+            return deployment.url ? (
+              <a
+                className="pr-toolbar__deployment"
+                href={deployment.url}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`${deployment.environment}: ${deployment.state}`}
+                key={deployment.id}
+              >
+                {content}
+              </a>
+            ) : (
+              <span
+                className="pr-toolbar__deployment"
+                aria-label={`${deployment.environment}: ${deployment.state}`}
+                key={deployment.id}
+              >
+                {content}
+              </span>
+            );
+          })}
+          {data.quickLinks.deployments.length === 0 &&
+          data.quickLinks.configuredLinks.length === 0 ? (
+            <span className="pr-toolbar__quick-links-empty">No quick links configured</span>
+          ) : null}
+        </div>
+      ) : null}
+      {quickLinksStatus === 'loading' ? (
+        <span className="pr-toolbar__quick-links-status" role="status">
+          Loading deployments
+        </span>
+      ) : null}
+      {quickLinksStatus === 'error' ? (
+        <div className="pr-toolbar__quick-links-error">
+          <span
+            className="pr-toolbar__quick-links-status pr-toolbar__quick-links-status--error"
+            role="status"
+          >
+            {quickLinksError?.code === 'rate-limited'
+              ? 'Deployments rate limited'
+              : 'Deployments unavailable'}
+          </span>
+          {onRetry ? (
+            <button className="pr-toolbar__button" type="button" onClick={onRetry}>
+              Retry
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 };
@@ -211,7 +290,9 @@ export const PRToolbar = ({ state, onOpenSettings, onRetry }: PRToolbarProps) =>
       <div className="pr-toolbar__content">
         {state.status === 'loading' ? <LoadingState /> : null}
         {state.status === 'unsupported-context' ? <UnsupportedState /> : null}
-        {state.status === 'success' ? <SuccessState {...state} /> : null}
+        {state.status === 'success' ? (
+          <SuccessState {...state} onRetry={onRetry} />
+        ) : null}
         {state.status === 'error' && state.error.code === 'missing-token' ? (
           <MissingTokenState onOpenSettings={onOpenSettings} />
         ) : null}

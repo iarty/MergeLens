@@ -51,6 +51,46 @@ describe('PRToolbar', () => {
     expect(screen.getByText('Browser tests').closest('a')).toBeNull();
   });
 
+  it('renders configured links and deployment states with safe links', () => {
+    render(
+      <PRToolbar
+        state={{
+          status: 'success',
+          quickLinksStatus: 'success',
+          data: {
+            ...toolbarData,
+            quickLinks: {
+              configuredLinks: [{ id: 'docs', label: 'Project docs', url: 'https://docs.example.com/' }],
+              deployments: [{ id: '7', environment: 'Preview', state: 'success', url: 'https://preview.example.com/', updatedAt: '2026-08-14T01:00:00Z' }],
+            },
+          },
+        }}
+      />,
+    );
+
+    expect(screen.getByRole('link', { name: 'Project docs' })).toHaveAttribute('rel', 'noreferrer');
+    expect(screen.getByRole('link', { name: 'Preview: success' })).toHaveAttribute('href', 'https://preview.example.com/');
+  });
+
+  it('preserves toolbar content and offers retry while deployments are unavailable', () => {
+    const onRetry = vi.fn();
+    render(
+      <PRToolbar
+        state={{
+          status: 'success',
+          data: toolbarData,
+          quickLinksStatus: 'error',
+          quickLinksError: { code: 'rate-limited', message: 'Try later' },
+        }}
+        onRetry={onRetry}
+      />,
+    );
+    expect(screen.getByRole('link', { name: 'Actions' })).toBeVisible();
+    expect(screen.getByRole('status')).toHaveTextContent('Deployments rate limited');
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(onRetry).toHaveBeenCalledOnce();
+  });
+
   it('renders the empty checks state without treating the PR as an error', () => {
     render(
       <PRToolbar

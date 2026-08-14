@@ -140,10 +140,79 @@
   background: #f3f4f6;
 }
 
+.pr-toolbar__quick-links,
+.pr-toolbar__quick-links-error {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pr-toolbar__quick-link,
+.pr-toolbar__deployment {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #d0d7de;
+  border-radius: 5px;
+  padding: 3px 7px;
+  background: #f6f8fa;
+  color: #57606a;
+  font-size: 11px;
+  text-decoration: none;
+}
+
+.pr-toolbar__quick-link:hover,
+.pr-toolbar__deployment:hover {
+  border-color: #afb8c1;
+  color: #0969da;
+}
+
+.pr-toolbar__deployment-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #8c959f;
+}
+
+.pr-toolbar__deployment-dot--success {
+  background: #1a7f37;
+}
+
+.pr-toolbar__deployment-dot--pending {
+  background: #bf8700;
+}
+
+.pr-toolbar__deployment-dot--failure,
+.pr-toolbar__deployment-dot--error {
+  background: #cf222e;
+}
+
+.pr-toolbar__deployment-dot--inactive {
+  background: #6e7781;
+}
+
+.pr-toolbar__quick-links-empty,
+.pr-toolbar__quick-links-status {
+  color: #6e7781;
+  font-size: 11px;
+}
+
+.pr-toolbar__quick-links-status {
+  white-space: nowrap;
+}
+
+.pr-toolbar__quick-links-status--error {
+  color: #9a6700;
+}
+
 .pr-toolbar__button:focus-visible,
 .pr-toolbar__actions-link:focus-visible,
 .pr-toolbar__title:focus-visible,
-.pr-toolbar__check:focus-visible {
+.pr-toolbar__check:focus-visible,
+.pr-toolbar__quick-link:focus-visible,
+.pr-toolbar__deployment:focus-visible {
   outline: 2px solid #0969da;
   outline-offset: 2px;
 }

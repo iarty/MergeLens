@@ -12,7 +12,12 @@ export interface PRToolbarError {
 export type PRToolbarState =
   | { status: 'loading' }
   | { status: 'unsupported-context' }
-  | { status: 'success'; data: ToolbarData }
+  | {
+      status: 'success';
+      data: ToolbarData;
+      quickLinksStatus?: 'loading' | 'success' | 'error';
+      quickLinksError?: PRToolbarError;
+    }
   | { status: 'error'; error: PRToolbarError };
 
 export interface PRToolbarProps {
