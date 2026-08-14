@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+const httpsUrlSchema = z.url().refine((value) => new URL(value).protocol === 'https:');
+
 export const pullRequestContextSchema = z.object({
   kind: z.literal('pull-request'),
   owner: z.string().min(1),
@@ -53,12 +55,6 @@ export const pullRequestSummarySchema = z.object({
   authorLogin: z.string().nullable(),
 });
 
-export const toolbarDataSchema = z.object({
-  pullRequest: pullRequestSummarySchema,
-  checks: z.array(checkSummarySchema),
-  actionsUrl: z.url(),
-});
-
 export const toolbarErrorCodeSchema = z.enum([
   'invalid-request',
   'missing-token',
@@ -68,6 +64,50 @@ export const toolbarErrorCodeSchema = z.enum([
   'invalid-response',
   'receiver-unavailable',
   'unknown-error',
+]);
+
+export const deploymentSummarySchema = z.object({
+  id: z.string().min(1),
+  environment: z.string().min(1),
+  state: z.enum(['pending', 'success', 'failure', 'inactive', 'error', 'unknown']),
+  url: httpsUrlSchema.nullable(),
+  updatedAt: z.iso.datetime({ offset: true }).nullable(),
+});
+
+export const configuredQuickLinkSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().trim().min(1).max(80),
+  url: httpsUrlSchema,
+});
+
+export const quickLinksDataSchema = z.object({
+  deployments: z.array(deploymentSummarySchema),
+  configuredLinks: z.array(configuredQuickLinkSchema),
+});
+
+export const toolbarDataSchema = z.object({
+  pullRequest: pullRequestSummarySchema,
+  checks: z.array(checkSummarySchema),
+  actionsUrl: z.url(),
+  quickLinks: quickLinksDataSchema.optional(),
+});
+
+export const quickLinksRequestSchema = toolbarRequestSchema;
+export const quickLinksResponseSchema = z.discriminatedUnion('status', [
+  z.object({
+    status: z.literal('success'),
+    correlationId: z.string().min(1).max(128),
+    data: quickLinksDataSchema,
+  }),
+  z.object({
+    status: z.literal('error'),
+    correlationId: z.string().min(1).max(128),
+    error: z.object({
+      code: toolbarErrorCodeSchema,
+      message: z.string().min(1),
+      retryAfterSeconds: z.number().int().nonnegative().optional(),
+    }),
+  }),
 ]);
 
 export const reviewInboxReasonSchema = z.enum([
@@ -151,6 +191,9 @@ export const toolbarResponseSchema = z.discriminatedUnion('status', [
 export type ToolbarRequest = z.infer<typeof toolbarRequestSchema>;
 export type ToolbarResponse = z.infer<typeof toolbarResponseSchema>;
 export type ToolbarData = z.infer<typeof toolbarDataSchema>;
+export type QuickLinksRequest = z.infer<typeof quickLinksRequestSchema>;
+export type QuickLinksResponse = z.infer<typeof quickLinksResponseSchema>;
+export type QuickLinksData = z.infer<typeof quickLinksDataSchema>;
 export type ToolbarErrorCode = z.infer<typeof toolbarErrorCodeSchema>;
 export type OpenOptionsPageResponse = z.infer<typeof openOptionsPageResponseSchema>;
 export type OpenCommandPaletteResponse = z.infer<

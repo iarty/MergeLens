@@ -3,6 +3,8 @@ import {
   isReceiverUnavailableError,
   parseReviewInboxRequest,
   parseReviewInboxResponse,
+  parseQuickLinksRequest,
+  parseQuickLinksResponse,
   parseToolbarRequest,
   parseToolbarResponse,
 } from '@/shared/messaging/protocol';
@@ -67,6 +69,20 @@ describe('PR toolbar messaging protocol', () => {
       ),
     ).toBe(true);
     expect(isReceiverUnavailableError(new Error('Network request failed'))).toBe(false);
+  });
+
+  it('validates quick links messages and rejects unsafe URLs', () => {
+    expect(parseQuickLinksRequest(request)).toEqual(request);
+    expect(parseQuickLinksResponse({
+      status: 'success',
+      correlationId: 'quick-1',
+      data: { deployments: [], configuredLinks: [] },
+    })).toMatchObject({ status: 'success', correlationId: 'quick-1' });
+    expect(() => parseQuickLinksResponse({
+      status: 'success',
+      correlationId: 'quick-1',
+      data: { deployments: [], configuredLinks: [{ id: 'bad', label: 'Bad', url: 'javascript:alert(1)' }] },
+    })).toThrow('Invalid quick links response');
   });
 
   it('validates a review inbox request and partial response', () => {

@@ -53,6 +53,7 @@ type ToolbarUiFactory = (
 interface ToolbarMountOptions {
   createUi?: ToolbarUiFactory;
   sendToolbarMessage?: typeof sendMessage;
+  sendQuickLinksMessage?: typeof sendMessage;
   findAnchor?: typeof findPullRequestToolbarAnchor;
   openSettings?: () => void | Promise<void>;
 }
@@ -145,6 +146,8 @@ export const mountPrToolbar = async (
   const createUi = options.createUi ?? createToolbarUi;
   const findAnchor = options.findAnchor ?? findPullRequestToolbarAnchor;
   const sendToolbarMessage = options.sendToolbarMessage ?? sendMessage;
+  const sendQuickLinksMessage =
+    options.sendQuickLinksMessage ?? (options.sendToolbarMessage ? null : sendMessage);
   const openSettings = options.openSettings ?? (() => sendMessage('openOptionsPage'));
   let currentContext: PullRequestPageContext | null = null;
   let currentContextKey: string | null = null;
@@ -178,6 +181,62 @@ export const mountPrToolbar = async (
 
       currentState = toToolbarState(response);
       render();
+      if (currentState.status === 'success' && sendQuickLinksMessage) {
+        currentState = { ...currentState, quickLinksStatus: 'loading' };
+        render();
+        try {
+          const quickLinksResponse = await sendQuickLinksMessage(
+            'getPullRequestQuickLinks',
+            { context, correlationId: createCorrelationId() },
+          );
+          if (requestId !== requestSequence || currentContextKey !== contextKey) {
+            logger.debug('Ignored stale quick links response', { requestId, contextKey });
+            return;
+          }
+          if (quickLinksResponse.status === 'success') {
+            currentState = {
+              status: 'success',
+              data: { ...currentState.data, quickLinks: quickLinksResponse.data },
+              quickLinksStatus: 'success',
+            };
+            render();
+          } else {
+            logger.warn('Quick links request returned an expected error', {
+              code: quickLinksResponse.error.code,
+            });
+            currentState = {
+              ...currentState,
+              quickLinksStatus: 'error',
+              quickLinksError: quickLinksResponse.error,
+            };
+            render();
+          }
+        } catch (quickLinksError) {
+          if (requestId !== requestSequence || currentContextKey !== contextKey) {
+            logger.debug('Ignored stale quick links request failure', {
+              requestId,
+              contextKey,
+            });
+            return;
+          }
+
+          logger.warn('Quick links request failed while preserving toolbar data', {
+            errorName:
+              quickLinksError instanceof Error ? quickLinksError.name : 'UnknownError',
+          });
+          currentState = {
+            ...currentState,
+            quickLinksStatus: 'error',
+            quickLinksError: {
+              code: isReceiverUnavailableError(quickLinksError)
+                ? 'receiver-unavailable'
+                : 'unknown-error',
+              message: 'Unable to load quick links',
+            },
+          };
+          render();
+        }
+      }
     } catch (error) {
       if (requestId !== requestSequence || currentContextKey !== contextKey) {
         logger.debug('Ignored stale toolbar request failure', { requestId, correlationId });

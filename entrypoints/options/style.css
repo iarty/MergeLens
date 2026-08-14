@@ -10,7 +10,148 @@ body {
   margin: 0;
 }
 
+.settings-page {
+  display: grid;
+  gap: 20px;
+  box-sizing: border-box;
+  width: min(calc(100% - 32px), 560px);
+  margin: 48px auto;
+}
+
+.settings-page .token-settings {
+  width: 100%;
+  margin: 0;
+}
+
+.quick-links-settings {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 20px;
+  color: #1f2328;
+  background: #fff;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+}
+
+.quick-links-settings h2,
+.quick-links-settings p {
+  margin: 0;
+}
+
+.quick-links-settings header {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.quick-links-settings header p {
+  color: #57606a;
+  font-size: 13px;
+}
+
+.quick-links-settings form {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.quick-links-settings input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  padding: 5px 8px;
+}
+
+.quick-links-settings button {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  padding: 5px 10px;
+  background: #f6f8fa;
+  color: #1f2328;
+  cursor: pointer;
+}
+
+.quick-links-settings button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.quick-links-settings form button {
+  grid-column: 2;
+  justify-self: start;
+}
+
+.quick-links-settings ul {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.quick-links-settings li {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #d8dee4;
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: #f6f8fa;
+}
+
+.quick-links-settings a {
+  display: inline-flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 6px;
+  overflow-wrap: anywhere;
+  color: #0969da;
+}
+
+.quick-links-settings__actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.quick-links-settings__actions button {
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+}
+
+.quick-links-settings__error {
+  margin-top: 12px !important;
+  color: #cf222e;
+}
+
 button,
 input {
   font: inherit;
+}
+
+@media (max-width: 480px) {
+  .settings-page {
+    margin: 24px auto;
+  }
+
+  .quick-links-settings form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .quick-links-settings form button {
+    grid-column: 1;
+  }
 }

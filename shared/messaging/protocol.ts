@@ -1,22 +1,27 @@
-import { defineExtensionMessaging } from '@webext-core/messaging';
-import { createLogger } from '@/shared/logging/logger';
+import { defineExtensionMessaging } from "@webext-core/messaging";
+import { createLogger } from "@/shared/logging/logger";
 import {
   reviewInboxRequestSchema,
   reviewInboxResponseSchema,
+  quickLinksRequestSchema,
+  quickLinksResponseSchema,
   toolbarRequestSchema,
   toolbarResponseSchema,
   type OpenOptionsPageResponse,
+  type QuickLinksRequest,
+  type QuickLinksResponse,
   type OpenCommandPaletteResponse,
   type ReviewInboxRequest,
   type ReviewInboxResponse,
   type ToolbarRequest,
   type ToolbarResponse,
-} from './schemas';
+} from "./schemas";
 
-const logger = createLogger('messaging');
+const logger = createLogger("messaging");
 
 export interface MergeLensProtocolMap {
   getPullRequestToolbarData(data: ToolbarRequest): ToolbarResponse;
+  getPullRequestQuickLinks(data: QuickLinksRequest): QuickLinksResponse;
   getReviewInbox(data: ReviewInboxRequest): ReviewInboxResponse;
   openOptionsPage(): OpenOptionsPageResponse;
   openCommandPalette(): OpenCommandPaletteResponse;
@@ -25,10 +30,10 @@ export interface MergeLensProtocolMap {
 export const { onMessage, removeAllListeners, sendMessage } =
   defineExtensionMessaging<MergeLensProtocolMap>({
     logger: {
-      debug: (...args) => logger.debug('Message debug event', { args }),
-      log: (...args) => logger.info('Message lifecycle event', { args }),
-      warn: (...args) => logger.warn('Message warning', { args }),
-      error: (...args) => logger.error('Message failure', { args }),
+      debug: (...args) => logger.debug("Message debug event", { args }),
+      log: (...args) => logger.info("Message lifecycle event", { args }),
+      warn: (...args) => logger.warn("Message warning", { args }),
+      error: (...args) => logger.error("Message failure", { args }),
     },
     throwOnUnknownMessageFormat: false,
   });
@@ -36,13 +41,13 @@ export const { onMessage, removeAllListeners, sendMessage } =
 export const parseToolbarRequest = (input: unknown): ToolbarRequest => {
   const result = toolbarRequestSchema.safeParse(input);
   if (!result.success) {
-    logger.warn('Rejected invalid toolbar request', {
+    logger.warn("Rejected invalid toolbar request", {
       issueCount: result.error.issues.length,
     });
-    throw new Error('Invalid PR toolbar request');
+    throw new Error("Invalid PR toolbar request");
   }
 
-  logger.debug('Validated toolbar request', {
+  logger.debug("Validated toolbar request", {
     correlationId: result.data.correlationId,
     owner: result.data.context.owner,
     repository: result.data.context.repository,
@@ -54,31 +59,61 @@ export const parseToolbarRequest = (input: unknown): ToolbarRequest => {
 export const parseToolbarResponse = (input: unknown): ToolbarResponse => {
   const result = toolbarResponseSchema.safeParse(input);
   if (!result.success) {
-    logger.warn('Rejected invalid toolbar response', {
+    logger.warn("Rejected invalid toolbar response", {
       issueCount: result.error.issues.length,
     });
-    throw new Error('Invalid PR toolbar response');
+    throw new Error("Invalid PR toolbar response");
   }
 
-  logger.debug('Validated toolbar response', {
+  logger.debug("Validated toolbar response", {
     correlationId: result.data.correlationId,
     status: result.data.status,
   });
   return result.data;
 };
 
-export const parseReviewInboxRequest = (
-  input: unknown,
-): ReviewInboxRequest => {
-  const result = reviewInboxRequestSchema.safeParse(input);
+export const parseQuickLinksRequest = (input: unknown): QuickLinksRequest => {
+  const result = quickLinksRequestSchema.safeParse(input);
   if (!result.success) {
-    logger.warn('Rejected invalid review inbox request', {
+    logger.warn("Rejected invalid quick links request", {
       issueCount: result.error.issues.length,
     });
-    throw new Error('Invalid review inbox request');
+    throw new Error("Invalid quick links request");
+  }
+  logger.debug("Validated quick links request", {
+    correlationId: result.data.correlationId,
+    owner: result.data.context.owner,
+    repository: result.data.context.repository,
+    pullNumber: result.data.context.pullNumber,
+  });
+  return result.data;
+};
+
+export const parseQuickLinksResponse = (input: unknown): QuickLinksResponse => {
+  const result = quickLinksResponseSchema.safeParse(input);
+  if (!result.success) {
+    logger.warn("Rejected invalid quick links response", {
+      issueCount: result.error.issues.length,
+    });
+    throw new Error("Invalid quick links response");
+  }
+  logger.debug("Validated quick links response", {
+    correlationId: result.data.correlationId,
+    status: result.data.status,
+  });
+  return result.data;
+};
+
+export const parseReviewInboxRequest = (input: unknown): ReviewInboxRequest => {
+  const result = reviewInboxRequestSchema.safeParse(input);
+  if (!result.success) {
+    logger.warn("Rejected invalid review inbox request", {
+      issueCount: result.error.issues.length,
+    });
+    throw new Error("Invalid review inbox request");
   }
 
-  logger.debug('Validated review inbox request', {
+  logger.debug("Validated review inbox request", {
     correlationId: result.data.correlationId,
   });
   return result.data;
@@ -89,17 +124,17 @@ export const parseReviewInboxResponse = (
 ): ReviewInboxResponse => {
   const result = reviewInboxResponseSchema.safeParse(input);
   if (!result.success) {
-    logger.warn('Rejected invalid review inbox response', {
+    logger.warn("Rejected invalid review inbox response", {
       issueCount: result.error.issues.length,
     });
-    throw new Error('Invalid review inbox response');
+    throw new Error("Invalid review inbox response");
   }
 
-  logger.debug('Validated review inbox response', {
+  logger.debug("Validated review inbox response", {
     correlationId: result.data.correlationId,
     status: result.data.status,
     sectionStatuses:
-      result.data.status === 'success'
+      result.data.status === "success"
         ? {
             reviewRequests: result.data.data.reviewRequests.status,
             assigned: result.data.data.assigned.status,
@@ -120,8 +155,8 @@ export const isReceiverUnavailableError = (error: unknown): boolean => {
   }
 
   return (
-    error.message.includes('Receiving end does not exist') ||
-    error.message.includes('Could not establish connection') ||
-    error.message.includes('No listener was registered')
+    error.message.includes("Receiving end does not exist") ||
+    error.message.includes("Could not establish connection") ||
+    error.message.includes("No listener was registered")
   );
 };

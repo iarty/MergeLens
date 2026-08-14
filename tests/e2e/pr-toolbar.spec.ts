@@ -52,6 +52,25 @@ const checkRunsResponse = {
   ],
 };
 
+const deploymentsResponse = [
+  {
+    id: 7,
+    environment: 'Preview',
+    sha: 'fixture-sha-42',
+    statuses_url: 'https://api.github.com/repos/facebook/react/deployments/7/statuses',
+  },
+];
+
+const deploymentStatusesResponse = [
+  {
+    state: 'success',
+    environment_url: 'https://preview.example.com/react/42',
+    target_url: null,
+    updated_at: '2026-08-14T01:00:00Z',
+    created_at: '2026-08-14T00:55:00Z',
+  },
+];
+
 const fulfillJson = async (route: Route, body: unknown, status = 200) => {
   await route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 };
@@ -78,6 +97,16 @@ const installRoutes = async (context: BrowserContext) => {
 
     if (url.pathname.includes('/check-runs')) {
       await fulfillJson(route, checkRunsResponse);
+      return;
+    }
+
+    if (url.pathname === '/repos/facebook/react/deployments') {
+      await fulfillJson(route, deploymentsResponse);
+      return;
+    }
+
+    if (url.pathname === '/repos/facebook/react/deployments/7/statuses') {
+      await fulfillJson(route, deploymentStatusesResponse);
       return;
     }
 
@@ -121,6 +150,10 @@ test('mounts exactly one toolbar across GitHub SPA navigation', async () => {
     await expect(page.getByRole('status')).toContainText('Loading pull request');
     await expect(page.getByRole('link', { name: 'React pull request 42' })).toBeVisible();
     await expect(page.getByText('Unit tests')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Preview: success' })).toHaveAttribute(
+      'href',
+      'https://preview.example.com/react/42',
+    );
 
     await page.getByRole('button', { name: 'Remove toolbar' }).click();
     await expect(toolbarHost).toHaveCount(1);
