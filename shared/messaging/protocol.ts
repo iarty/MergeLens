@@ -3,9 +3,13 @@ import { createLogger } from '@/shared/logging/logger';
 import {
   reviewInboxRequestSchema,
   reviewInboxResponseSchema,
+  quickLinksRequestSchema,
+  quickLinksResponseSchema,
   toolbarRequestSchema,
   toolbarResponseSchema,
   type OpenOptionsPageResponse,
+  type QuickLinksRequest,
+  type QuickLinksResponse,
   type ReviewInboxRequest,
   type ReviewInboxResponse,
   type ToolbarRequest,
@@ -16,6 +20,7 @@ const logger = createLogger('messaging');
 
 export interface MergeLensProtocolMap {
   getPullRequestToolbarData(data: ToolbarRequest): ToolbarResponse;
+  getPullRequestQuickLinks(data: QuickLinksRequest): QuickLinksResponse;
   getReviewInbox(data: ReviewInboxRequest): ReviewInboxResponse;
   openOptionsPage(): OpenOptionsPageResponse;
 }
@@ -59,6 +64,38 @@ export const parseToolbarResponse = (input: unknown): ToolbarResponse => {
   }
 
   logger.debug('Validated toolbar response', {
+    correlationId: result.data.correlationId,
+    status: result.data.status,
+  });
+  return result.data;
+};
+
+export const parseQuickLinksRequest = (input: unknown): QuickLinksRequest => {
+  const result = quickLinksRequestSchema.safeParse(input);
+  if (!result.success) {
+    logger.warn('Rejected invalid quick links request', {
+      issueCount: result.error.issues.length,
+    });
+    throw new Error('Invalid quick links request');
+  }
+  logger.debug('Validated quick links request', {
+    correlationId: result.data.correlationId,
+    owner: result.data.context.owner,
+    repository: result.data.context.repository,
+    pullNumber: result.data.context.pullNumber,
+  });
+  return result.data;
+};
+
+export const parseQuickLinksResponse = (input: unknown): QuickLinksResponse => {
+  const result = quickLinksResponseSchema.safeParse(input);
+  if (!result.success) {
+    logger.warn('Rejected invalid quick links response', {
+      issueCount: result.error.issues.length,
+    });
+    throw new Error('Invalid quick links response');
+  }
+  logger.debug('Validated quick links response', {
     correlationId: result.data.correlationId,
     status: result.data.status,
   });

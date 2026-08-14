@@ -4,6 +4,11 @@ import {
   OctokitReviewInboxReader,
   OctokitPullRequestReader,
 } from '@/modules/pull-requests';
+import {
+  createGetPullRequestQuickLinks,
+  OctokitQuickLinksReader,
+} from '@/modules/quick-links';
+import { readConfiguredQuickLinks } from '@/modules/quick-links/settings';
 import { createLogger } from '@/shared/logging/logger';
 import { onMessage } from '@/shared/messaging/protocol';
 
@@ -14,6 +19,9 @@ export default defineBackground(() => {
     new OctokitPullRequestReader(),
   );
   const getReviewInbox = createGetReviewInbox(new OctokitReviewInboxReader());
+  const getPullRequestQuickLinks = createGetPullRequestQuickLinks(
+    new OctokitQuickLinksReader(undefined, undefined, readConfiguredQuickLinks),
+  );
 
   onMessage('getPullRequestToolbarData', ({ data }) => {
     return getPullRequestToolbarData(data);
@@ -21,6 +29,10 @@ export default defineBackground(() => {
 
   onMessage('getReviewInbox', ({ data }) => {
     return getReviewInbox(data);
+  });
+
+  onMessage('getPullRequestQuickLinks', ({ data }) => {
+    return getPullRequestQuickLinks(data);
   });
 
   onMessage('openOptionsPage', async () => {

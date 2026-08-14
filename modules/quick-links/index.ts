@@ -12,3 +12,4 @@ export type {
   ReadQuickLinksInput,
 } from './ports/QuickLinksReader';
 export { OctokitQuickLinksReader } from './adapters/OctokitQuickLinksReader';
+export { createGetPullRequestQuickLinks } from './application/getPullRequestQuickLinks';
