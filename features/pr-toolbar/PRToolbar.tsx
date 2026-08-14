@@ -1,4 +1,6 @@
+import { NotebookPen } from 'lucide-react';
 import { useEffect } from 'react';
+import { LocalReviewPanel } from '@/features/local-review/LocalReviewPanel';
 import type { CheckStatus } from '@/modules/pull-requests';
 import { createLogger } from '@/shared/logging/logger';
 import type {
@@ -270,7 +272,14 @@ const SuccessState = ({
   );
 };
 
-export const PRToolbar = ({ state, onOpenSettings, onRetry }: PRToolbarProps) => {
+export const PRToolbar = ({
+  state,
+  localReviewController,
+  isLocalReviewOpen = false,
+  onOpenSettings,
+  onRetry,
+  onToggleLocalReview,
+}: PRToolbarProps) => {
   useEffect(() => {
     const checkCount = state.status === 'success' ? state.data.checks.length : undefined;
     logger.debug('PR toolbar state changed', { status: state.status, checkCount });
@@ -288,18 +297,37 @@ export const PRToolbar = ({ state, onOpenSettings, onRetry }: PRToolbarProps) =>
         ML
       </div>
       <div className="pr-toolbar__content">
-        {state.status === 'loading' ? <LoadingState /> : null}
-        {state.status === 'unsupported-context' ? <UnsupportedState /> : null}
-        {state.status === 'success' ? (
-          <SuccessState {...state} onRetry={onRetry} />
-        ) : null}
-        {state.status === 'error' && state.error.code === 'missing-token' ? (
-          <MissingTokenState onOpenSettings={onOpenSettings} />
-        ) : null}
-        {state.status === 'error' && state.error.code !== 'missing-token' ? (
-          <ErrorState error={state.error} onRetry={onRetry} />
+        <div className="pr-toolbar__state">
+          {state.status === 'loading' ? <LoadingState /> : null}
+          {state.status === 'unsupported-context' ? <UnsupportedState /> : null}
+          {state.status === 'success' ? (
+            <SuccessState {...state} onRetry={onRetry} />
+          ) : null}
+          {state.status === 'error' && state.error.code === 'missing-token' ? (
+            <MissingTokenState onOpenSettings={onOpenSettings} />
+          ) : null}
+          {state.status === 'error' && state.error.code !== 'missing-token' ? (
+            <ErrorState error={state.error} onRetry={onRetry} />
+          ) : null}
+        </div>
+        {localReviewController && onToggleLocalReview ? (
+          <button
+            className="pr-toolbar__notes-button"
+            type="button"
+            aria-expanded={isLocalReviewOpen}
+            aria-controls="mergelens-local-review-workspace"
+            onClick={onToggleLocalReview}
+          >
+            <NotebookPen size={16} aria-hidden="true" />
+            Notes
+          </button>
         ) : null}
       </div>
+      {localReviewController && isLocalReviewOpen ? (
+        <div id="mergelens-local-review-workspace" className="pr-toolbar__local-review">
+          <LocalReviewPanel controller={localReviewController} />
+        </div>
+      ) : null}
     </section>
   );
 };

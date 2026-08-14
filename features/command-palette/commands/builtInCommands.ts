@@ -5,6 +5,16 @@ import { navigationCommands } from './navigationCommands';
 export const builtInCommands: readonly Command[] = [
   ...navigationCommands,
   {
+    id: 'open-local-review-workspace',
+    title: 'Open local review workspace',
+    keywords: ['notes', 'private', 'templates', 'review'],
+    isAvailable: hasPullRequestContext,
+    execute: async (_context, dependencies) => {
+      await dependencies.openLocalReviewWorkspace();
+      return { status: 'success', commandId: 'open-local-review-workspace' };
+    },
+  },
+  {
     id: 'open-settings',
     title: 'Open MergeLens settings',
     keywords: ['options', 'configuration', 'token'],

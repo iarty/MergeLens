@@ -1,6 +1,8 @@
 import { createRoot, type Root } from 'react-dom/client';
 import type { ContentScriptContext } from 'wxt/utils/content-script-context';
 import { createShadowRootUi } from 'wxt/utils/content-script-ui/shadow-root';
+import { createLocalReviewController } from '@/features/local-review/localReviewController';
+import type { LocalReviewController } from '@/features/local-review/types';
 import type { PullRequestPageContext } from '@/shared/github/context/PageContext';
 import {
   findPullRequestToolbarAnchor,
@@ -41,8 +43,11 @@ interface ToolbarUi {
 }
 
 interface ToolbarUiCallbacks {
+  getLocalReviewController: () => LocalReviewController | null;
+  isLocalReviewOpen: () => boolean;
   onOpenSettings: () => void;
   onRetry: () => void;
+  onToggleLocalReview: () => void;
 }
 
 type ToolbarUiFactory = (
@@ -52,6 +57,7 @@ type ToolbarUiFactory = (
 
 interface ToolbarMountOptions {
   createUi?: ToolbarUiFactory;
+  createReviewController?: typeof createLocalReviewController;
   sendToolbarMessage?: typeof sendMessage;
   sendQuickLinksMessage?: typeof sendMessage;
   findAnchor?: typeof findPullRequestToolbarAnchor;
@@ -72,8 +78,11 @@ const createToolbarUi: ToolbarUiFactory = async (ctx, callbacks) => {
       root.render(
         <PRToolbar
           state={currentState}
+          localReviewController={callbacks.getLocalReviewController() ?? undefined}
+          isLocalReviewOpen={callbacks.isLocalReviewOpen()}
           onOpenSettings={callbacks.onOpenSettings}
           onRetry={callbacks.onRetry}
+          onToggleLocalReview={callbacks.onToggleLocalReview}
         />,
       );
       return root;
@@ -86,8 +95,11 @@ const createToolbarUi: ToolbarUiFactory = async (ctx, callbacks) => {
     ui.mounted?.render(
       <PRToolbar
         state={currentState}
+        localReviewController={callbacks.getLocalReviewController() ?? undefined}
+        isLocalReviewOpen={callbacks.isLocalReviewOpen()}
         onOpenSettings={callbacks.onOpenSettings}
         onRetry={callbacks.onRetry}
+        onToggleLocalReview={callbacks.onToggleLocalReview}
       />,
     );
   };
@@ -146,12 +158,16 @@ export const mountPrToolbar = async (
   const createUi = options.createUi ?? createToolbarUi;
   const findAnchor = options.findAnchor ?? findPullRequestToolbarAnchor;
   const sendToolbarMessage = options.sendToolbarMessage ?? sendMessage;
+  const createReviewController =
+    options.createReviewController ?? createLocalReviewController;
   const sendQuickLinksMessage =
     options.sendQuickLinksMessage ?? (options.sendToolbarMessage ? null : sendMessage);
   const openSettings = options.openSettings ?? (() => sendMessage('openOptionsPage'));
   let currentContext: PullRequestPageContext | null = null;
   let currentContextKey: string | null = null;
   let currentState: PRToolbarState = { status: 'unsupported-context' };
+  let localReviewController: LocalReviewController | null = null;
+  let isLocalReviewOpen = false;
   let ui: ToolbarUi | null = null;
   let uiPromise: Promise<ToolbarUi> | null = null;
   let uiSequence = 0;
@@ -260,11 +276,30 @@ export const mountPrToolbar = async (
     }
   };
 
+  const disposeLocalReview = (): void => {
+    const controller = localReviewController;
+    localReviewController = null;
+    if (!controller) {
+      return;
+    }
+
+    void controller.dispose().catch((error: unknown) => {
+      logger.error('Failed to dispose local review controller', {
+        errorName: error instanceof Error ? error.name : 'UnknownError',
+      });
+    });
+  };
+
   const remove = () => {
     requestSequence += 1;
     uiSequence += 1;
     currentContext = null;
     currentContextKey = null;
+    if (isLocalReviewOpen) {
+      logger.info('Closed local review workspace during toolbar removal');
+    }
+    isLocalReviewOpen = false;
+    disposeLocalReview();
     uiPromise = null;
     if (!ui) {
       return;
@@ -289,6 +324,8 @@ export const mountPrToolbar = async (
 
     const creationSequence = uiSequence;
     uiPromise ??= createUi(ctx, {
+      getLocalReviewController: () => localReviewController,
+      isLocalReviewOpen: () => isLocalReviewOpen,
       onOpenSettings: () => {
         try {
           void Promise.resolve(openSettings()).catch((error: unknown) => {
@@ -306,6 +343,21 @@ export const mountPrToolbar = async (
         if (currentContext) {
           void loadToolbarData(currentContext);
         }
+      },
+      onToggleLocalReview: () => {
+        if (!localReviewController || !currentContextKey) {
+          logger.warn('Ignored local review toggle without PR context');
+          return;
+        }
+
+        isLocalReviewOpen = !isLocalReviewOpen;
+        render();
+        logger.info(
+          isLocalReviewOpen
+            ? 'Opened local review workspace from toolbar'
+            : 'Closed local review workspace from toolbar',
+          { contextKey: currentContextKey },
+        );
       },
     });
     const creationPromise = uiPromise;
@@ -340,9 +392,24 @@ export const mountPrToolbar = async (
       return;
     }
 
+    const previousContextKey = currentContextKey;
     currentContext = nextContext;
     currentContextKey = nextContextKey;
     logger.info('Reconciling PR toolbar context', { contextKey: nextContextKey });
+    if (!localReviewController) {
+      localReviewController = createReviewController(nextContext);
+      logger.info('Created local review controller', { contextKey: nextContextKey });
+    } else {
+      localReviewController.reconcileContext(nextContext);
+      if (previousContextKey !== nextContextKey && isLocalReviewOpen) {
+        isLocalReviewOpen = false;
+        render();
+        logger.info('Closed local review workspace for new PR context', {
+          previousContextKey,
+          contextKey: nextContextKey,
+        });
+      }
+    }
     await ensureUi();
     if (currentContextKey !== nextContextKey || !ui) {
       logger.debug('Skipped superseded toolbar reconciliation', {
@@ -366,5 +433,30 @@ export const mountPrToolbar = async (
     await loadToolbarData(currentContext);
   };
 
-  return { reconcile, refresh, remove };
+  const openLocalReviewWorkspace = async (): Promise<void> => {
+    if (!currentContext || !localReviewController) {
+      logger.warn('Ignored local review open request without PR context');
+      return;
+    }
+
+    await ensureUi();
+    if (!ui || !currentContextKey) {
+      logger.warn('Local review workspace UI is unavailable');
+      return;
+    }
+    if (isLocalReviewOpen) {
+      logger.debug('Ignored duplicate local review open request', {
+        contextKey: currentContextKey,
+      });
+      return;
+    }
+
+    isLocalReviewOpen = true;
+    render();
+    logger.info('Opened local review workspace from external action', {
+      contextKey: currentContextKey,
+    });
+  };
+
+  return { reconcile, refresh, openLocalReviewWorkspace, remove };
 };

@@ -55,25 +55,54 @@ describe('command palette integration', () => {
     }
   });
 
-  it('delegates settings and toolbar refresh without exposing credentials', async () => {
+  it('delegates local review, settings, and toolbar refresh without exposing data', async () => {
     history.replaceState({}, '', '/facebook/react/pull/42');
     const fakeContext = createFakeContext();
     const ui = createFakeUi();
     const openSettings = vi.fn().mockResolvedValue(undefined);
+    const openLocalReviewWorkspace = vi.fn().mockResolvedValue(undefined);
     const refreshPullRequestToolbar = vi.fn().mockResolvedValue(undefined);
     createCommandPaletteController(fakeContext.context as never, ui, window, {
       openSettings,
+      openLocalReviewWorkspace,
       refreshPullRequestToolbar,
     });
     try {
       const props = getLatestRenderProps(ui);
 
       await props.onExecute('open-settings');
+      await props.onExecute('open-local-review-workspace');
       await props.onExecute('refresh-pull-request-toolbar');
 
       expect(openSettings).toHaveBeenCalledOnce();
+      expect(openLocalReviewWorkspace).toHaveBeenCalledOnce();
       expect(refreshPullRequestToolbar).toHaveBeenCalledOnce();
-      expect(ui.render.mock.calls.flat()).not.toContain(expect.stringMatching(/token|credential/i));
+      expect(ui.render.mock.calls.flat()).not.toContain(
+        expect.stringMatching(/token|credential|note body|template body/i),
+      );
+    } finally {
+      fakeContext.invalidate();
+    }
+  });
+
+  it('handles an unavailable local review callback without failing execution', async () => {
+    history.replaceState({}, '', '/facebook/react/pull/42');
+    const fakeContext = createFakeContext();
+    const ui = createFakeUi();
+    const controller = createCommandPaletteController(
+      fakeContext.context as never,
+      ui,
+      window,
+    );
+
+    try {
+      controller.open();
+      const props = getLatestRenderProps(ui);
+
+      await expect(
+        props.onExecute('open-local-review-workspace'),
+      ).resolves.toBeUndefined();
+      expect(ui.render.mock.lastCall?.[0]).toMatchObject({ isOpen: false });
     } finally {
       fakeContext.invalidate();
     }

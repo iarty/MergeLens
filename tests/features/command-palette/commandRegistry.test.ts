@@ -9,6 +9,7 @@ import type {
 
 const createDependencies = (): CommandDependencies => ({
   navigate: vi.fn(),
+  openLocalReviewWorkspace: vi.fn().mockResolvedValue(undefined),
   openSettings: vi.fn().mockResolvedValue(undefined),
   refreshPullRequestToolbar: vi.fn().mockResolvedValue(undefined),
 });
@@ -23,6 +24,7 @@ describe('createCommandRegistry', () => {
       'open-current-pull-request',
       'open-repository',
       'open-actions',
+      'open-local-review-workspace',
       'open-settings',
       'refresh-pull-request-toolbar',
     ]);
@@ -36,6 +38,21 @@ describe('createCommandRegistry', () => {
     expect(registry.search('SETTINGS', context!).map(({ id }) => id)).toEqual([
       'open-settings',
     ]);
+  });
+
+  it('only exposes the local review workspace command on pull requests', () => {
+    const repositoryContext = createCommandContext('https://github.com/facebook/react');
+    const pullRequestContext = createCommandContext(
+      'https://github.com/facebook/react/pull/42',
+    );
+    const registry = createCommandRegistry(builtInCommands);
+
+    expect(
+      registry.getAvailable(repositoryContext!).map(({ id }) => id),
+    ).not.toContain('open-local-review-workspace');
+    expect(
+      registry.getAvailable(pullRequestContext!).map(({ id }) => id),
+    ).toContain('open-local-review-workspace');
   });
 
   it('rejects duplicate command IDs', () => {
@@ -52,6 +69,7 @@ describe('createCommandRegistry', () => {
     const registry = createCommandRegistry(builtInCommands);
 
     await registry.execute('open-actions', context!, dependencies);
+    await registry.execute('open-local-review-workspace', context!, dependencies);
     await registry.execute('open-settings', context!, dependencies);
     await registry.execute('refresh-pull-request-toolbar', context!, dependencies);
 
@@ -59,6 +77,7 @@ describe('createCommandRegistry', () => {
       'https://github.com/facebook/react/actions',
     );
     expect(dependencies.openSettings).toHaveBeenCalledOnce();
+    expect(dependencies.openLocalReviewWorkspace).toHaveBeenCalledOnce();
     expect(dependencies.refreshPullRequestToolbar).toHaveBeenCalledOnce();
   });
 
