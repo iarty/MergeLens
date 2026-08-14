@@ -23,6 +23,10 @@ export const openOptionsPageResponseSchema = z.object({
   status: z.literal('success'),
 });
 
+export const openCommandPaletteResponseSchema = z.object({
+  status: z.literal('success'),
+});
+
 export const checkStatusSchema = z.enum([
   'queued',
   'in-progress',
@@ -192,6 +196,9 @@ export type QuickLinksResponse = z.infer<typeof quickLinksResponseSchema>;
 export type QuickLinksData = z.infer<typeof quickLinksDataSchema>;
 export type ToolbarErrorCode = z.infer<typeof toolbarErrorCodeSchema>;
 export type OpenOptionsPageResponse = z.infer<typeof openOptionsPageResponseSchema>;
+export type OpenCommandPaletteResponse = z.infer<
+  typeof openCommandPaletteResponseSchema
+>;
 export type ReviewInboxRequest = z.infer<typeof reviewInboxRequestSchema>;
 export type ReviewInboxResponse = z.infer<typeof reviewInboxResponseSchema>;
 export type ReviewInboxData = z.infer<typeof reviewInboxDataSchema>;
