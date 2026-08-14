@@ -204,6 +204,74 @@ test('renders a stable error when GitHub API fails', async () => {
   }
 });
 
+test('keeps private notes available through API errors and PR navigation', async () => {
+  const context = await launchExtension();
+  try {
+    const fixture = await readFile(fixturePath, 'utf8');
+    await context.route('https://github.com/**', (route) =>
+      route.fulfill({ status: 200, contentType: 'text/html', body: fixture }),
+    );
+    await context.route('https://api.github.com/**', (route) =>
+      fulfillJson(route, { message: 'Fixture service unavailable' }, 503),
+    );
+
+    const page = await context.newPage();
+    await openGitHubFixture(page);
+    const toolbarHost = page.locator('mergelens-pr-toolbar');
+    await expect(toolbarHost).toHaveCount(1);
+    await page.getByRole('button', { name: 'Notes' }).click();
+
+    const editor = page.getByRole('textbox', { name: 'Pull request note' });
+    await expect(editor).toBeVisible();
+    await editor.fill('Private PR 42 observation');
+    await expect(page.getByRole('status')).toContainText('Saved', { timeout: 5_000 });
+
+    await page.getByRole('button', { name: 'Same PR' }).click();
+    await expect(page).toHaveURL(/\/pull\/42\/files$/);
+    await expect(page.getByRole('textbox', { name: 'Pull request note' })).toHaveValue(
+      'Private PR 42 observation',
+    );
+
+    await page.getByRole('button', { name: 'Next PR' }).click();
+    await expect(page).toHaveURL(/\/pull\/43$/);
+    await expect(page.getByRole('textbox', { name: 'Pull request note' })).toHaveValue('');
+  } finally {
+    await context.close();
+  }
+});
+
+test('restores an edited local review workspace after its host is replaced', async () => {
+  const context = await launchExtension();
+  try {
+    const fixture = await readFile(fixturePath, 'utf8');
+    await context.route('https://github.com/**', (route) =>
+      route.fulfill({ status: 200, contentType: 'text/html', body: fixture }),
+    );
+    await context.route('https://api.github.com/**', (route) =>
+      fulfillJson(route, { message: 'Fixture service unavailable' }, 503),
+    );
+    const page = await context.newPage();
+    await openGitHubFixture(page);
+    await page.getByRole('button', { name: 'Notes' }).click();
+    const editor = page.getByRole('textbox', { name: 'Pull request note' });
+    await editor.fill('Draft survives host replacement');
+
+    await page.getByRole('button', { name: 'Remove toolbar' }).click();
+    await expect(page.locator('mergelens-pr-toolbar')).toHaveCount(1);
+    await expect(page.getByRole('textbox', { name: 'Pull request note' })).toHaveValue(
+      'Draft survives host replacement',
+    );
+
+    await page.getByRole('button', { name: 'Replace header' }).click();
+    await expect(page.locator('mergelens-pr-toolbar')).toHaveCount(1);
+    await expect(page.getByRole('textbox', { name: 'Pull request note' })).toHaveValue(
+      'Draft survives host replacement',
+    );
+  } finally {
+    await context.close();
+  }
+});
+
 test('opens the extension options page from the injected toolbar', async () => {
   const context = await launchExtension();
   try {
