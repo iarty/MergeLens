@@ -39,6 +39,13 @@
   font-size: 16px;
 }
 
+.command-palette__header kbd {
+  margin-left: auto;
+  margin-right: 12px;
+  color: #57606a;
+  font-size: 11px;
+}
+
 .command-palette__close {
   color: #57606a;
   background: transparent;

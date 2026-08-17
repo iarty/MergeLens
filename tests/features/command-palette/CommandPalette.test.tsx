@@ -4,6 +4,7 @@ import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { CommandPalette } from '@/features/command-palette/CommandPalette';
 import { createCommandContext } from '@/features/command-palette/commands/context';
+import { getCommandShortcut } from '@/features/command-palette';
 
 const context = createCommandContext('https://github.com/facebook/react/pull/42')!;
 
@@ -42,6 +43,12 @@ describe('CommandPalette', () => {
       'true',
     );
     await waitFor(() => expect(screen.getByRole('searchbox')).toHaveFocus());
+  });
+
+  it('renders the configured opening shortcut as palette metadata', () => {
+    renderPalette({ shortcut: getCommandShortcut('primary-shift-k')! });
+
+    expect(screen.getByText('Ctrl / Cmd Shift K')).toBeVisible();
   });
 
   it('filters commands without exposing unavailable actions', () => {

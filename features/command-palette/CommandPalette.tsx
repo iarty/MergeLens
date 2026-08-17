@@ -2,7 +2,8 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createLogger } from '@/shared/logging/logger';
 import { createCommandRegistry } from './commandRegistry';
 import { builtInCommands } from './commands/builtInCommands';
-import type { CommandContext, CommandId } from './types';
+import type { CommandContext, CommandId, CommandShortcut } from './types';
+import { DEFAULT_COMMAND_SHORTCUT } from './shortcuts';
 import './CommandPalette.css';
 
 const logger = createLogger('commandPalette.ui');
@@ -14,6 +15,7 @@ export interface CommandPaletteProps {
   onClose: () => void;
   onExecute: (commandId: CommandId) => Promise<void>;
   returnFocus: HTMLElement | null;
+  shortcut?: CommandShortcut;
 }
 
 export const CommandPalette = ({
@@ -22,6 +24,7 @@ export const CommandPalette = ({
   onClose,
   onExecute,
   returnFocus,
+  shortcut = DEFAULT_COMMAND_SHORTCUT,
 }: CommandPaletteProps) => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -79,6 +82,7 @@ export const CommandPalette = ({
       >
         <div className="command-palette__header">
           <h2 id={titleId}>Command palette</h2>
+          <kbd>{shortcut.label}</kbd>
           <button type="button" className="command-palette__close" onClick={onClose} aria-label="Close command palette">
             Escape
           </button>

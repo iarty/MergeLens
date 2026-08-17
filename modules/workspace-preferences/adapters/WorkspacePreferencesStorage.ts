@@ -142,6 +142,29 @@ const getRepositoryPreferencesItem = () =>
 type StorageCategory = 'saved-filters' | 'global' | 'repositories';
 type StorageOperation = 'read' | 'write';
 
+export type WorkspacePreferencesStorageChangeCategory = StorageCategory;
+
+export const subscribeWorkspacePreferencesStorage = (
+  listener: (category: WorkspacePreferencesStorageChangeCategory) => void,
+): (() => void) => {
+  const items = getStorageItems();
+  const subscriptions = [
+    items.savedFilters.watch(() => listener('saved-filters')),
+    items.globalPreferences.watch(() => listener('global')),
+    items.repositoryPreferences.watch(() => listener('repositories')),
+  ];
+  logger.debug('Subscribed to workspace preference storage changes', {
+    categoryCount: subscriptions.length,
+  });
+
+  return () => {
+    subscriptions.forEach((unsubscribe) => unsubscribe());
+    logger.debug('Unsubscribed from workspace preference storage changes', {
+      categoryCount: subscriptions.length,
+    });
+  };
+};
+
 let mutationQueue: Promise<void> = Promise.resolve();
 
 const runSerializedMutation = <T>(operation: () => Promise<T>): Promise<T> => {

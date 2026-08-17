@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createKeyboardController } from '@/features/command-palette/keyboardController';
+import { getCommandShortcut } from '@/features/command-palette';
 
 describe('command palette keyboard controller', () => {
   it('opens on Ctrl/Cmd+K and closes on Escape', () => {
@@ -64,6 +65,83 @@ describe('command palette keyboard controller', () => {
     window.dispatchEvent(new KeyboardEvent('keydown', {
       key: 'p',
       ctrlKey: true,
+      cancelable: true,
+    }));
+
+    expect(open).not.toHaveBeenCalled();
+    controller.stop();
+  });
+
+  it.each([
+    ['primary-shift-k', 'k'],
+    ['primary-shift-p', 'p'],
+  ] as const)('opens with supported shortcut %s', (shortcutId, key) => {
+    const open = vi.fn();
+    const shortcut = getCommandShortcut(shortcutId)!;
+    const controller = createKeyboardController(window, {
+      open,
+      close: vi.fn(),
+      isOpen: () => false,
+    }, shortcut);
+    controller.start();
+
+    window.dispatchEvent(new KeyboardEvent('keydown', {
+      key,
+      ctrlKey: true,
+      shiftKey: true,
+      cancelable: true,
+    }));
+
+    expect(open).toHaveBeenCalledOnce();
+    controller.stop();
+  });
+
+  it('updates the active shortcut without duplicating its listener', () => {
+    const open = vi.fn();
+    const controller = createKeyboardController(window, {
+      open,
+      close: vi.fn(),
+      isOpen: () => false,
+    });
+    controller.start();
+
+    expect(controller.updateShortcut(getCommandShortcut('primary-shift-p')!))
+      .toBe(true);
+    window.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'k',
+      ctrlKey: true,
+      cancelable: true,
+    }));
+    window.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'p',
+      ctrlKey: true,
+      shiftKey: true,
+      cancelable: true,
+    }));
+
+    expect(open).toHaveBeenCalledOnce();
+    controller.stop();
+  });
+
+  it('rejects non-canonical shortcuts and conflicting primary modifiers', () => {
+    const open = vi.fn();
+    const controller = createKeyboardController(window, {
+      open,
+      close: vi.fn(),
+      isOpen: () => false,
+    });
+    controller.start();
+
+    expect(controller.updateShortcut({
+      id: 'primary-k',
+      key: 'k',
+      modifiers: ['primary'],
+      label: 'Untrusted',
+    })).toBe(false);
+    window.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'k',
+      ctrlKey: true,
+      metaKey: true,
       cancelable: true,
     }));
 

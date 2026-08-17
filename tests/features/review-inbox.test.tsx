@@ -41,6 +41,12 @@ describe('ReviewInbox', () => {
     expect(screen.getByText('Command palette')).toBeVisible();
   });
 
+  it('renders the effective command palette shortcut', () => {
+    renderInbox({ commandPaletteShortcutLabel: 'Ctrl / Cmd Shift P' });
+
+    expect(screen.getByText('Ctrl / Cmd Shift P')).toBeVisible();
+  });
+
   it('renders loading state and disabled refresh', () => {
     renderInbox({ data: undefined, isLoading: true });
 
