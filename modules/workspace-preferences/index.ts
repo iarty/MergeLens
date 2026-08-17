@@ -3,6 +3,7 @@ export {
   MAX_SAVED_FILTER_COUNT,
   MAX_SAVED_FILTER_CRITERION_COUNT,
   MAX_SAVED_FILTER_NAME_LENGTH,
+  MAX_REPOSITORY_PREFERENCE_COUNT,
   WorkspacePreferencesRepositoryError,
   WorkspacePreferencesValidationError,
   createRepositoryKey,
@@ -14,6 +15,12 @@ export {
   normalizeSavedInboxFilters,
   resolveEffectiveWorkspacePreferences,
 } from './domain/WorkspacePreferences';
+export type { WorkspacePreferencesRepository } from './ports/WorkspacePreferencesRepository';
+export {
+  MAX_WORKSPACE_PREFERENCES_SYNC_ITEM_BYTES,
+  WORKSPACE_PREFERENCES_STORAGE_VERSION,
+  WxtWorkspacePreferencesRepository,
+} from './adapters/WorkspacePreferencesStorage';
 export type {
   CommandPaletteShortcutId,
   DraftStateFilter,

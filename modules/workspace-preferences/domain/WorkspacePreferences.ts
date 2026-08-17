@@ -3,6 +3,7 @@ import type { ReviewInboxPullRequest } from '@/modules/pull-requests';
 export const MAX_SAVED_FILTER_COUNT = 25;
 export const MAX_SAVED_FILTER_NAME_LENGTH = 80;
 export const MAX_SAVED_FILTER_CRITERION_COUNT = 20;
+export const MAX_REPOSITORY_PREFERENCE_COUNT = 100;
 
 const MAX_IDENTIFIER_LENGTH = 128;
 const MAX_REPOSITORY_SEGMENT_LENGTH = 100;
