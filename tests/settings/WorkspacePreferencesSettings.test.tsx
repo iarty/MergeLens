@@ -292,6 +292,30 @@ describe('WorkspacePreferencesSettings', () => {
     expect(updateWorkspacePreferences).not.toHaveBeenCalled();
   });
 
+  it('keeps the form usable after an expected mutation failure', async () => {
+    vi.mocked(upsertSavedFilter).mockResolvedValue({
+      status: 'error',
+      error: {
+        code: 'quota-exceeded',
+        message: 'Quota exceeded',
+      },
+    });
+    render(<WorkspacePreferencesSettings />);
+    await screen.findByText('No saved filters yet.');
+
+    fireEvent.change(screen.getByLabelText('Name'), {
+      target: { value: 'Team queue' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Add filter' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Sync storage is full',
+    );
+    expect(screen.getByLabelText('Name')).toHaveValue('Team queue');
+    expect(screen.getByRole('button', { name: 'Add filter' })).toBeEnabled();
+    expect(screen.getByText('No saved filters yet.')).toBeVisible();
+  });
+
   it('shows a recoverable storage error and retries loading', async () => {
     vi.mocked(getWorkspacePreferences)
       .mockResolvedValueOnce({

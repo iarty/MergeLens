@@ -148,4 +148,33 @@ describe('command palette keyboard controller', () => {
     expect(open).not.toHaveBeenCalled();
     controller.stop();
   });
+
+  it('falls back to the default shortcut for invalid initial metadata', () => {
+    const open = vi.fn();
+    const controller = createKeyboardController(window, {
+      open,
+      close: vi.fn(),
+      isOpen: () => false,
+    }, {
+      id: 'primary-shift-p',
+      key: 'p',
+      modifiers: ['primary'],
+      label: 'Invalid metadata',
+    });
+    controller.start();
+
+    window.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'p',
+      ctrlKey: true,
+      cancelable: true,
+    }));
+    window.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'k',
+      ctrlKey: true,
+      cancelable: true,
+    }));
+
+    expect(open).toHaveBeenCalledOnce();
+    controller.stop();
+  });
 });
