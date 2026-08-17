@@ -7,13 +7,21 @@ import {
 import { createCommandRegistry } from './commandRegistry';
 import { builtInCommands } from './commands/builtInCommands';
 import { createCommandContext } from './commands/context';
-import type { CommandContext, CommandDependencies } from './types';
+import type {
+  CommandContext,
+  CommandDependencies,
+  CommandShortcut,
+} from './types';
 import type { CommandId } from './types';
 import { createKeyboardController } from './keyboardController';
 import {
   DEFAULT_WORKSPACE_PREFERENCES,
-  type EffectiveWorkspacePreferences,
+  type EffectiveWorkspacePreferencesSnapshot,
 } from '@/modules/workspace-preferences';
+import {
+  DEFAULT_COMMAND_SHORTCUT,
+  getCommandShortcut,
+} from './shortcuts';
 
 const logger = createLogger('commandPalette.controller');
 const activeControllers = new WeakMap<Window, CommandPaletteController>();
@@ -27,6 +35,7 @@ export interface PaletteControllerUi {
     onClose: () => void;
     onExecute: (commandId: CommandId) => Promise<void>;
     returnFocus: HTMLElement | null;
+    shortcut: CommandShortcut;
   }) => void;
 }
 
@@ -38,7 +47,8 @@ export interface CommandPaletteControllerOptions {
   registerOpenRequest?: (open: () => void) => () => void;
   resolveWorkspacePreferences?: (
     context: CommandContext,
-  ) => Promise<EffectiveWorkspacePreferences>;
+  ) => Promise<EffectiveWorkspacePreferencesSnapshot>;
+  subscribeWorkspacePreferences?: (refresh: () => void) => () => void;
 }
 
 export interface CommandPaletteController {
@@ -70,7 +80,9 @@ export const createCommandPaletteController = (
   }
 
   let context: CommandContext = initialContext;
-  let workspacePreferences = DEFAULT_WORKSPACE_PREFERENCES;
+  let shortcut = DEFAULT_COMMAND_SHORTCUT;
+  let refreshVersion = 0;
+  let isRemoved = false;
 
   const dependencies: CommandDependencies = {
     navigate: options.navigate ?? ((url) => {
@@ -93,7 +105,14 @@ export const createCommandPaletteController = (
     }
 
     isOpen = false;
-    ui.render({ isOpen, context, onClose: close, onExecute, returnFocus: opener });
+    ui.render({
+      isOpen,
+      context,
+      onClose: close,
+      onExecute,
+      returnFocus: opener,
+      shortcut,
+    });
     logger.info('Command palette closed');
   };
 
@@ -106,7 +125,14 @@ export const createCommandPaletteController = (
       ? targetWindow.document.activeElement
       : null;
     isOpen = true;
-    ui.render({ isOpen, context, onClose: close, onExecute, returnFocus: opener });
+    ui.render({
+      isOpen,
+      context,
+      onClose: close,
+      onExecute,
+      returnFocus: opener,
+      shortcut,
+    });
     logger.info('Command palette opened', {
       availableCount: registry.getAvailable(context).length,
     });
@@ -132,12 +158,43 @@ export const createCommandPaletteController = (
     open,
     close,
     isOpen: () => isOpen,
-    getShortcut: () => workspacePreferences.featureFlags.customCommandPaletteShortcut
-      ? workspacePreferences.commandPaletteShortcut
-      : DEFAULT_WORKSPACE_PREFERENCES.commandPaletteShortcut,
-  });
+  }, shortcut);
+
+  const applyWorkspacePreferences = (
+    snapshot: EffectiveWorkspacePreferencesSnapshot,
+  ): void => {
+    const shortcutId = snapshot.preferences.featureFlags
+      .customCommandPaletteShortcut
+      ? snapshot.preferences.commandPaletteShortcut
+      : DEFAULT_WORKSPACE_PREFERENCES.commandPaletteShortcut;
+    const nextShortcut = getCommandShortcut(shortcutId);
+    if (!nextShortcut) {
+      logger.warn('Using default after unsupported workspace shortcut', {
+        source: snapshot.source,
+      });
+      shortcut = DEFAULT_COMMAND_SHORTCUT;
+    } else {
+      shortcut = nextShortcut;
+    }
+
+    keyboard.updateShortcut(shortcut);
+    ui.render({
+      isOpen,
+      context,
+      onClose: close,
+      onExecute,
+      returnFocus: opener,
+      shortcut,
+    });
+    logger.info('Applied workspace shortcut preference', {
+      source: snapshot.source,
+      customShortcutEnabled:
+        snapshot.preferences.featureFlags.customCommandPaletteShortcut,
+    });
+  };
 
   const refreshWorkspacePreferences = async (): Promise<void> => {
+    const currentVersion = ++refreshVersion;
     if (!options.resolveWorkspacePreferences) {
       logger.debug('Workspace preference resolver unavailable; using defaults', {
         hasRepositoryContext: Boolean(context.repositoryContext),
@@ -146,14 +203,33 @@ export const createCommandPaletteController = (
     }
 
     try {
-      workspacePreferences = await options.resolveWorkspacePreferences(context);
+      const snapshot = await options.resolveWorkspacePreferences(context);
+      if (isRemoved || currentVersion !== refreshVersion) {
+        logger.warn('Ignored stale workspace preference refresh', {
+          refreshVersion: currentVersion,
+          currentVersion: refreshVersion,
+          isRemoved,
+        });
+        return;
+      }
+      applyWorkspacePreferences(snapshot);
       logger.debug('Applied workspace preference snapshot to command palette', {
         hasRepositoryContext: Boolean(context.repositoryContext),
-        customShortcutEnabled:
-          workspacePreferences.featureFlags.customCommandPaletteShortcut,
+        source: snapshot.source,
+        refreshVersion: currentVersion,
       });
     } catch (error) {
-      workspacePreferences = DEFAULT_WORKSPACE_PREFERENCES;
+      if (isRemoved || currentVersion !== refreshVersion) return;
+      shortcut = DEFAULT_COMMAND_SHORTCUT;
+      keyboard.updateShortcut(shortcut);
+      ui.render({
+        isOpen,
+        context,
+        onClose: close,
+        onExecute,
+        returnFocus: opener,
+        shortcut,
+      });
       logger.warn('Using default command palette preferences after resolver failure', {
         errorName: error instanceof Error ? error.name : 'UnknownError',
       });
@@ -171,7 +247,14 @@ export const createCommandPaletteController = (
     context = nextContext;
     void refreshWorkspacePreferences();
     if (isOpen) {
-      ui.render({ isOpen, context, onClose: close, onExecute, returnFocus: opener });
+      ui.render({
+        isOpen,
+        context,
+        onClose: close,
+        onExecute,
+        returnFocus: opener,
+        shortcut,
+      });
     }
     logger.debug('Updated palette page context', {
       hasPullRequest: context.pageContext?.kind === 'pull-request',
@@ -184,11 +267,26 @@ export const createCommandPaletteController = (
   });
   keyboard.start();
   void refreshWorkspacePreferences();
+  const removePreferencesSubscription =
+    options.subscribeWorkspacePreferences?.(() => {
+      logger.info('Accepted workspace preference refresh notification');
+      void refreshWorkspacePreferences();
+    }) ?? (() => {});
   const removeOpenMessageListener = options.registerOpenRequest?.(open) ?? (() => {});
   ui.mount();
-  ui.render({ isOpen, context, onClose: close, onExecute, returnFocus: opener });
+  ui.render({
+    isOpen,
+    context,
+    onClose: close,
+    onExecute,
+    returnFocus: opener,
+    shortcut,
+  });
 
   const remove = (): void => {
+    isRemoved = true;
+    refreshVersion += 1;
+    removePreferencesSubscription();
     removeOpenMessageListener();
     keyboard.stop();
     ui.remove();

@@ -1,4 +1,7 @@
-import { WxtWorkspacePreferencesRepository } from './adapters/WorkspacePreferencesStorage';
+import {
+  WxtWorkspacePreferencesRepository,
+  subscribeWorkspacePreferencesStorage,
+} from './adapters/WorkspacePreferencesStorage';
 import { createDeleteSavedFilter } from './application/deleteSavedFilter';
 import { createGetWorkspacePreferences } from './application/getWorkspacePreferences';
 import { createListSavedFilters } from './application/listSavedFilters';
@@ -28,7 +31,9 @@ export {
   MAX_WORKSPACE_PREFERENCES_SYNC_ITEM_BYTES,
   WORKSPACE_PREFERENCES_STORAGE_VERSION,
   WxtWorkspacePreferencesRepository,
+  subscribeWorkspacePreferencesStorage,
 } from './adapters/WorkspacePreferencesStorage';
+export type { WorkspacePreferencesStorageChangeCategory } from './adapters/WorkspacePreferencesStorage';
 export type {
   CommandPaletteShortcutId,
   DraftStateFilter,
@@ -89,3 +94,6 @@ export const updateWorkspacePreferences = createUpdateWorkspacePreferences(
 );
 export const getEffectiveWorkspacePreferences =
   createGetEffectiveWorkspacePreferences(workspacePreferencesRepository);
+
+export const subscribeWorkspacePreferences =
+  subscribeWorkspacePreferencesStorage;

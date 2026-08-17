@@ -1,4 +1,9 @@
+import {
+  DEFAULT_COMMAND_SHORTCUT,
+  getCommandShortcut,
+} from '@/features/command-palette/shortcuts';
 import { ReviewInbox } from '@/features/review-inbox/ReviewInbox';
+import { useActiveRepositoryKey } from '@/features/review-inbox/useActiveRepositoryKey';
 import { useReviewInboxQuery } from '@/features/review-inbox/useReviewInboxQuery';
 import { useWorkspacePreferences } from '@/features/review-inbox/useWorkspacePreferences';
 import { createLogger } from '@/shared/logging/logger';
@@ -8,8 +13,12 @@ import './App.css';
 const logger = createLogger('popup.app');
 
 const App = () => {
+  const repositoryKey = useActiveRepositoryKey();
   const inboxQuery = useReviewInboxQuery();
-  const workspacePreferences = useWorkspacePreferences();
+  const workspacePreferences = useWorkspacePreferences(repositoryKey);
+  const commandPaletteShortcut =
+    getCommandShortcut(workspacePreferences.commandPaletteShortcut) ??
+    DEFAULT_COMMAND_SHORTCUT;
 
   const handleRefresh = () => {
     logger.info('Refreshing review inbox from popup');
@@ -59,6 +68,7 @@ const App = () => {
       isFiltersLoading={workspacePreferences.isLoading}
       hasFiltersLoadError={workspacePreferences.hasLoadError}
       onFilterChange={workspacePreferences.selectFilter}
+      commandPaletteShortcutLabel={commandPaletteShortcut.label}
     />
   );
 };

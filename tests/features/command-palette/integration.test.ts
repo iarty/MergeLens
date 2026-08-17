@@ -33,6 +33,7 @@ const getLatestRenderProps = (ui: ReturnType<typeof createFakeUi>) => {
   return ui.render.mock.lastCall?.[0] as {
     context: { pageContext: { pullNumber: number } | null };
     onExecute: (commandId: CommandId) => Promise<void>;
+    shortcut: { id: string; label: string };
   };
 };
 
@@ -141,5 +142,104 @@ describe('command palette integration', () => {
 
     fakeContext.invalidate();
     expect(removeOpenRequest).toHaveBeenCalledOnce();
+  });
+
+  it('applies refreshed workspace shortcuts and removes the subscription', async () => {
+    history.replaceState({}, '', '/facebook/react/pull/42');
+    const fakeContext = createFakeContext();
+    const ui = createFakeUi();
+    const removeSubscription = vi.fn();
+    let refresh: (() => void) | undefined;
+    const resolveWorkspacePreferences = vi
+      .fn()
+      .mockResolvedValueOnce({
+        preferences: {
+          featureFlags: {
+            savedFilters: true,
+            customCommandPaletteShortcut: true,
+          },
+          commandPaletteShortcut: 'primary-shift-p',
+        },
+        repositoryKey: 'facebook/react',
+        source: 'repository',
+      })
+      .mockResolvedValueOnce({
+        preferences: {
+          featureFlags: {
+            savedFilters: true,
+            customCommandPaletteShortcut: false,
+          },
+          commandPaletteShortcut: 'primary-shift-k',
+        },
+        repositoryKey: 'facebook/react',
+        source: 'repository',
+      });
+
+    createCommandPaletteController(fakeContext.context as never, ui, window, {
+      resolveWorkspacePreferences,
+      subscribeWorkspacePreferences: (listener) => {
+        refresh = listener;
+        return removeSubscription;
+      },
+    });
+
+    await vi.waitFor(() => {
+      expect(getLatestRenderProps(ui).shortcut.id).toBe('primary-shift-p');
+    });
+    refresh?.();
+    await vi.waitFor(() => {
+      expect(getLatestRenderProps(ui).shortcut.id).toBe('primary-k');
+    });
+
+    fakeContext.invalidate();
+    expect(removeSubscription).toHaveBeenCalledOnce();
+  });
+
+  it('ignores a stale preference result after SPA navigation', async () => {
+    history.replaceState({}, '', '/facebook/react/pull/42');
+    const fakeContext = createFakeContext();
+    const ui = createFakeUi();
+    let resolveInitial!: (value: unknown) => void;
+    const initialResult = new Promise((resolve) => {
+      resolveInitial = resolve;
+    });
+    const resolveWorkspacePreferences = vi
+      .fn()
+      .mockReturnValueOnce(initialResult)
+      .mockResolvedValueOnce({
+        preferences: {
+          featureFlags: {
+            savedFilters: true,
+            customCommandPaletteShortcut: true,
+          },
+          commandPaletteShortcut: 'primary-shift-k',
+        },
+        repositoryKey: 'facebook/react',
+        source: 'repository',
+      });
+
+    createCommandPaletteController(fakeContext.context as never, ui, window, {
+      resolveWorkspacePreferences,
+    });
+    fakeContext.navigate('https://github.com/facebook/react/pull/43');
+    await vi.waitFor(() => {
+      expect(getLatestRenderProps(ui).shortcut.id).toBe('primary-shift-k');
+    });
+
+    resolveInitial({
+      preferences: {
+        featureFlags: {
+          savedFilters: true,
+          customCommandPaletteShortcut: true,
+        },
+        commandPaletteShortcut: 'primary-shift-p',
+      },
+      repositoryKey: 'facebook/react',
+      source: 'repository',
+    });
+    await Promise.resolve();
+
+    expect(getLatestRenderProps(ui).shortcut.id).toBe('primary-shift-k');
+    fakeContext.invalidate();
   });
 });

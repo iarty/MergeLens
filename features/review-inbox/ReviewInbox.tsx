@@ -31,6 +31,7 @@ interface ReviewInboxProps {
   isFiltersLoading: boolean;
   hasFiltersLoadError: boolean;
   onFilterChange: (filterId: string | null) => void;
+  commandPaletteShortcutLabel?: string;
 }
 
 const VIEWS: Array<{ id: ReviewInboxView; label: string }> = [
@@ -159,6 +160,7 @@ export const ReviewInbox = ({
   isFiltersLoading,
   hasFiltersLoadError,
   onFilterChange,
+  commandPaletteShortcutLabel = 'Ctrl / Cmd K',
 }: ReviewInboxProps) => {
   const [activeView, setActiveView] =
     useState<ReviewInboxView>('reviewRequests');
@@ -380,7 +382,7 @@ export const ReviewInbox = ({
         >
           <CommandIcon aria-hidden="true" size={15} />
           <span>Open</span>
-          <kbd>Ctrl / Cmd K</kbd>
+          <kbd>{commandPaletteShortcutLabel}</kbd>
         </button>
       </section>
 

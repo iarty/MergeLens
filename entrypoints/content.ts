@@ -6,7 +6,10 @@ import { observePageContext } from '@/shared/github/dom/navigation';
 import { mountPrToolbar } from '@/features/pr-toolbar/mountPrToolbar';
 import { createLogger } from '@/shared/logging/logger';
 import { onMessage } from '@/shared/messaging/protocol';
-import { getEffectiveWorkspacePreferences } from '@/modules/workspace-preferences';
+import {
+  getEffectiveWorkspacePreferences,
+  subscribeWorkspacePreferences,
+} from '@/modules/workspace-preferences';
 
 const logger = createLogger('content');
 
@@ -29,8 +32,12 @@ export default defineContentScript({
         const repositoryKey = commandContext.repositoryContext
           ? `${commandContext.repositoryContext.owner}/${commandContext.repositoryContext.repository}`
           : null;
-        return (await getEffectiveWorkspacePreferences(repositoryKey)).preferences;
+        return getEffectiveWorkspacePreferences(repositoryKey);
       },
+      subscribeWorkspacePreferences: (refresh) =>
+        subscribeWorkspacePreferences((category) => {
+          if (category !== 'saved-filters') refresh();
+        }),
     });
     observePageContext(ctx, window, (context) => {
       void toolbar.reconcile(context);

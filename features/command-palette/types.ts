@@ -1,4 +1,5 @@
 import type { PageContext } from '@/shared/github/context/PageContext';
+import type { CommandPaletteShortcutId } from '@/modules/workspace-preferences';
 
 export type CommandId =
   | 'open-current-pull-request'
@@ -19,8 +20,10 @@ export interface CommandContext {
 }
 
 export interface CommandShortcut {
-  key: string;
-  modifiers: readonly ('alt' | 'control' | 'meta' | 'shift')[];
+  id: CommandPaletteShortcutId;
+  key: 'k' | 'p';
+  modifiers: readonly ['primary'] | readonly ['primary', 'shift'];
+  label: string;
 }
 
 export interface CommandExecutionResult {

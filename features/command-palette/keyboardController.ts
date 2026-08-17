@@ -1,5 +1,9 @@
 import { createLogger } from '@/shared/logging/logger';
-import type { CommandPaletteShortcutId } from '@/modules/workspace-preferences';
+import type { CommandShortcut } from './types';
+import {
+  DEFAULT_COMMAND_SHORTCUT,
+  isSupportedCommandShortcut,
+} from './shortcuts';
 
 const logger = createLogger('commandPalette.keyboard');
 
@@ -7,7 +11,6 @@ export interface KeyboardControllerCallbacks {
   open: () => void;
   close: () => void;
   isOpen: () => boolean;
-  getShortcut?: () => CommandPaletteShortcutId;
 }
 
 const isEditableTarget = (target: EventTarget | null): boolean => {
@@ -22,20 +25,28 @@ const isEditableTarget = (target: EventTarget | null): boolean => {
 };
 export const isPaletteShortcut = (
   event: KeyboardEvent,
-  shortcut: CommandPaletteShortcutId = 'primary-k',
+  shortcut: CommandShortcut = DEFAULT_COMMAND_SHORTCUT,
 ): boolean => {
-  const isK = event.key.toLowerCase() === (shortcut === 'primary-shift-p' ? 'p' : 'k');
-  const hasPrimaryModifier = event.metaKey || event.ctrlKey;
-  const requiresShift = shortcut !== 'primary-k';
-  const hasConflictingModifier = event.altKey || event.shiftKey !== requiresShift;
-  return isK && hasPrimaryModifier && !hasConflictingModifier;
+  const requiresShift = shortcut.modifiers.length === 2;
+  const hasOnePrimaryModifier = event.metaKey !== event.ctrlKey;
+  const matches =
+    event.key.toLowerCase() === shortcut.key &&
+    hasOnePrimaryModifier &&
+    !event.altKey &&
+    event.shiftKey === requiresShift;
+  logger.debug('Evaluated command palette shortcut', { matches });
+  return matches;
 };
 
 export const createKeyboardController = (
   target: Window,
   callbacks: KeyboardControllerCallbacks,
+  initialShortcut: CommandShortcut = DEFAULT_COMMAND_SHORTCUT,
 ) => {
   let started = false;
+  let shortcut = isSupportedCommandShortcut(initialShortcut)
+    ? initialShortcut
+    : DEFAULT_COMMAND_SHORTCUT;
 
   const handleKeyDown = (event: KeyboardEvent): void => {
     if (event.key === 'Escape' && callbacks.isOpen()) {
@@ -45,7 +56,7 @@ export const createKeyboardController = (
       return;
     }
 
-    if (!isPaletteShortcut(event, callbacks.getShortcut?.())) {
+    if (!isPaletteShortcut(event, shortcut)) {
       return;
     }
 
@@ -61,6 +72,20 @@ export const createKeyboardController = (
   };
 
   return {
+    updateShortcut: (nextShortcut: CommandShortcut): boolean => {
+      if (!isSupportedCommandShortcut(nextShortcut)) {
+        logger.warn('Rejected unsupported command palette shortcut');
+        return false;
+      }
+      if (shortcut === nextShortcut) return true;
+
+      shortcut = nextShortcut;
+      logger.info('Applied command palette keyboard shortcut');
+      logger.debug('Kept keyboard listener while replacing shortcut state', {
+        listenerStarted: started,
+      });
+      return true;
+    },
     start: (): void => {
       if (started) {
         logger.warn('Ignored duplicate keyboard controller start');
