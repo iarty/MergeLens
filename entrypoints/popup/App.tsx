@@ -54,6 +54,7 @@ const App = () => {
       onOpenSettings={handleOpenSettings}
       onOpenCommandPalette={handleOpenCommandPalette}
       savedFilters={workspacePreferences.savedFilters}
+      savedFiltersEnabled={workspacePreferences.savedFiltersEnabled}
       activeFilterId={workspacePreferences.activeFilterId}
       isFiltersLoading={workspacePreferences.isLoading}
       hasFiltersLoadError={workspacePreferences.hasLoadError}

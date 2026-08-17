@@ -4,6 +4,7 @@ import { createGetWorkspacePreferences } from './application/getWorkspacePrefere
 import { createListSavedFilters } from './application/listSavedFilters';
 import { createUpdateWorkspacePreferences } from './application/updateWorkspacePreferences';
 import { createUpsertSavedFilter } from './application/upsertSavedFilter';
+import { createGetEffectiveWorkspacePreferences } from './application/getEffectiveWorkspacePreferences';
 
 export {
   DEFAULT_WORKSPACE_PREFERENCES,
@@ -60,12 +61,14 @@ export type {
   WorkspacePreferencesState,
   WorkspacePreferencesUseCaseDependencies,
 } from './application/contracts';
+export type { EffectiveWorkspacePreferencesSnapshot } from './application/getEffectiveWorkspacePreferences';
 
 export { createListSavedFilters } from './application/listSavedFilters';
 export { createUpsertSavedFilter } from './application/upsertSavedFilter';
 export { createDeleteSavedFilter } from './application/deleteSavedFilter';
 export { createGetWorkspacePreferences } from './application/getWorkspacePreferences';
 export { createUpdateWorkspacePreferences } from './application/updateWorkspacePreferences';
+export { createGetEffectiveWorkspacePreferences } from './application/getEffectiveWorkspacePreferences';
 
 const workspacePreferencesRepository = new WxtWorkspacePreferencesRepository();
 
@@ -84,3 +87,5 @@ export const getWorkspacePreferences = createGetWorkspacePreferences(
 export const updateWorkspacePreferences = createUpdateWorkspacePreferences(
   workspacePreferencesRepository,
 );
+export const getEffectiveWorkspacePreferences =
+  createGetEffectiveWorkspacePreferences(workspacePreferencesRepository);

@@ -10,6 +10,10 @@ import { createCommandContext } from './commands/context';
 import type { CommandContext, CommandDependencies } from './types';
 import type { CommandId } from './types';
 import { createKeyboardController } from './keyboardController';
+import {
+  DEFAULT_WORKSPACE_PREFERENCES,
+  type EffectiveWorkspacePreferences,
+} from '@/modules/workspace-preferences';
 
 const logger = createLogger('commandPalette.controller');
 const activeControllers = new WeakMap<Window, CommandPaletteController>();
@@ -32,6 +36,9 @@ export interface CommandPaletteControllerOptions {
   openSettings?: () => Promise<void>;
   refreshPullRequestToolbar?: () => Promise<void>;
   registerOpenRequest?: (open: () => void) => () => void;
+  resolveWorkspacePreferences?: (
+    context: CommandContext,
+  ) => Promise<EffectiveWorkspacePreferences>;
 }
 
 export interface CommandPaletteController {
@@ -63,6 +70,7 @@ export const createCommandPaletteController = (
   }
 
   let context: CommandContext = initialContext;
+  let workspacePreferences = DEFAULT_WORKSPACE_PREFERENCES;
 
   const dependencies: CommandDependencies = {
     navigate: options.navigate ?? ((url) => {
@@ -124,7 +132,33 @@ export const createCommandPaletteController = (
     open,
     close,
     isOpen: () => isOpen,
+    getShortcut: () => workspacePreferences.featureFlags.customCommandPaletteShortcut
+      ? workspacePreferences.commandPaletteShortcut
+      : DEFAULT_WORKSPACE_PREFERENCES.commandPaletteShortcut,
   });
+
+  const refreshWorkspacePreferences = async (): Promise<void> => {
+    if (!options.resolveWorkspacePreferences) {
+      logger.debug('Workspace preference resolver unavailable; using defaults', {
+        hasRepositoryContext: Boolean(context.repositoryContext),
+      });
+      return;
+    }
+
+    try {
+      workspacePreferences = await options.resolveWorkspacePreferences(context);
+      logger.debug('Applied workspace preference snapshot to command palette', {
+        hasRepositoryContext: Boolean(context.repositoryContext),
+        customShortcutEnabled:
+          workspacePreferences.featureFlags.customCommandPaletteShortcut,
+      });
+    } catch (error) {
+      workspacePreferences = DEFAULT_WORKSPACE_PREFERENCES;
+      logger.warn('Using default command palette preferences after resolver failure', {
+        errorName: error instanceof Error ? error.name : 'UnknownError',
+      });
+    }
+  };
 
   const updateContext = (nextUrl: URL): void => {
     const nextContext = createCommandContext(nextUrl);
@@ -135,6 +169,7 @@ export const createCommandPaletteController = (
     }
 
     context = nextContext;
+    void refreshWorkspacePreferences();
     if (isOpen) {
       ui.render({ isOpen, context, onClose: close, onExecute, returnFocus: opener });
     }
@@ -148,6 +183,7 @@ export const createCommandPaletteController = (
     updateContext(newUrl);
   });
   keyboard.start();
+  void refreshWorkspacePreferences();
   const removeOpenMessageListener = options.registerOpenRequest?.(open) ?? (() => {});
   ui.mount();
   ui.render({ isOpen, context, onClose: close, onExecute, returnFocus: opener });
