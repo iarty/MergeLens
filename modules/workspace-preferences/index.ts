@@ -1,3 +1,10 @@
+import { WxtWorkspacePreferencesRepository } from './adapters/WorkspacePreferencesStorage';
+import { createDeleteSavedFilter } from './application/deleteSavedFilter';
+import { createGetWorkspacePreferences } from './application/getWorkspacePreferences';
+import { createListSavedFilters } from './application/listSavedFilters';
+import { createUpdateWorkspacePreferences } from './application/updateWorkspacePreferences';
+import { createUpsertSavedFilter } from './application/upsertSavedFilter';
+
 export {
   DEFAULT_WORKSPACE_PREFERENCES,
   MAX_SAVED_FILTER_COUNT,
@@ -39,14 +46,41 @@ export type {
 export {
   deleteSavedInboxFilter,
   getWorkspacePreferencesErrorName,
+  isExpectedWorkspacePreferencesError,
   toWorkspacePreferencesError,
   upsertSavedInboxFilter,
 } from './application/operation';
 export type {
   DeleteSavedInboxFilterInput,
+  UpdateWorkspacePreferencesInput,
   UpsertSavedInboxFilterInput,
+  WorkspacePreferenceOverridesState,
   WorkspacePreferencesError,
   WorkspacePreferencesResult,
   WorkspacePreferencesState,
   WorkspacePreferencesUseCaseDependencies,
 } from './application/contracts';
+
+export { createListSavedFilters } from './application/listSavedFilters';
+export { createUpsertSavedFilter } from './application/upsertSavedFilter';
+export { createDeleteSavedFilter } from './application/deleteSavedFilter';
+export { createGetWorkspacePreferences } from './application/getWorkspacePreferences';
+export { createUpdateWorkspacePreferences } from './application/updateWorkspacePreferences';
+
+const workspacePreferencesRepository = new WxtWorkspacePreferencesRepository();
+
+export const listSavedFilters = createListSavedFilters(
+  workspacePreferencesRepository,
+);
+export const upsertSavedFilter = createUpsertSavedFilter(
+  workspacePreferencesRepository,
+);
+export const deleteSavedFilter = createDeleteSavedFilter(
+  workspacePreferencesRepository,
+);
+export const getWorkspacePreferences = createGetWorkspacePreferences(
+  workspacePreferencesRepository,
+);
+export const updateWorkspacePreferences = createUpdateWorkspacePreferences(
+  workspacePreferencesRepository,
+);

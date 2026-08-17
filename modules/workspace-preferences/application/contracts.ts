@@ -20,6 +20,25 @@ export interface DeleteSavedInboxFilterInput {
   filterId: string;
 }
 
+export type UpdateWorkspacePreferencesInput =
+  | {
+      kind: 'global';
+      preferences: GlobalWorkspacePreferences;
+    }
+  | {
+      kind: 'repository-upsert';
+      preferences: RepositoryWorkspacePreferences;
+    }
+  | {
+      kind: 'repository-delete';
+      repositoryKey: string;
+    };
+
+export interface WorkspacePreferenceOverridesState {
+  globalPreferences: GlobalWorkspacePreferences;
+  repositoryPreferences: RepositoryWorkspacePreferences[];
+}
+
 export interface WorkspacePreferencesError {
   code: WorkspacePreferencesErrorCode;
   message: string;
