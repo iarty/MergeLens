@@ -8,6 +8,8 @@ import {
   closeExtension,
   bootstrapExtensionWorker,
   configureLocalCredential,
+  configureWorkspacePreferences,
+  getExtensionId,
   launchExtension,
   openExtensionPopup,
 } from './extension';
@@ -170,6 +172,125 @@ test('keeps partial inbox data and retries a failed section', async () => {
       popup.getByRole('link', { name: 'Clarify React server component warnings' }),
     ).toBeVisible();
     expect(assignedRequestCount).toBe(2);
+  } finally {
+    await closeExtension(context);
+  }
+});
+
+test('applies a saved filter to inbox items and section counts', async () => {
+  const context = await launchExtension();
+  try {
+    await installSuccessfulSearchRoutes(context);
+    const serviceWorker = await bootstrapExtensionWorker(context);
+    await configureLocalCredential(serviceWorker);
+    await configureWorkspacePreferences(serviceWorker, {
+      savedFilters: {
+        schemaVersion: 1,
+        value: [{
+          id: 'my-review-requests',
+          name: 'My review requests',
+          view: 'assigned',
+          criteria: {
+            repositories: [],
+            authors: ['react-contributor'],
+            draftState: 'ready',
+          },
+        }],
+      },
+    });
+    const popup = await openExtensionPopup(context, serviceWorker);
+
+    const filter = popup.getByLabel('Saved filter');
+    await expect(filter).toBeVisible();
+    await filter.selectOption('my-review-requests');
+    await expect(popup.getByRole('button', { name: /Assigned 1/ })).toBeVisible();
+    await expect(
+      popup.getByRole('link', { name: 'Improve concurrent rendering behavior' }),
+    ).toBeVisible();
+    await expect(
+      popup.getByRole('link', { name: 'Clarify React server component warnings' }),
+    ).toHaveCount(0);
+  } finally {
+    await closeExtension(context);
+  }
+});
+
+test('persists a saved filter after reopening the settings surface', async () => {
+  const context = await launchExtension();
+  try {
+    const serviceWorker = await bootstrapExtensionWorker(context);
+    await configureLocalCredential(serviceWorker);
+    const popup = await openExtensionPopup(context, serviceWorker);
+    const optionsPagePromise = context.waitForEvent('page');
+    await popup.getByRole('button', { name: 'Open settings' }).click();
+    const optionsPage = await optionsPagePromise;
+    await expect(optionsPage.getByRole('heading', { name: 'Workspace preferences' })).toBeVisible();
+    await optionsPage.getByLabel('Name').fill('Persisted queue');
+    await optionsPage.getByLabel('Inbox view').selectOption('assigned');
+    await optionsPage.getByLabel('Authors').fill('react-contributor');
+    await optionsPage.getByRole('button', { name: 'Add filter' }).click();
+    await expect(optionsPage.getByText('Persisted queue')).toBeVisible();
+    await optionsPage.close();
+
+    const reopened = await context.newPage();
+    await reopened.goto(`chrome-extension://${getExtensionId(serviceWorker)}/options.html`, {
+      waitUntil: 'domcontentloaded',
+      timeout: 5_000,
+    });
+    await expect(reopened.getByText('Persisted queue')).toBeVisible();
+    await expect(reopened.getByRole('list', { name: 'Saved inbox filters' })).toContainText(
+      'Assigned',
+    );
+  } finally {
+    await closeExtension(context);
+  }
+});
+
+test('applies a repository feature-flag override without hiding other controls', async () => {
+  const context = await launchExtension();
+  try {
+    await installSuccessfulSearchRoutes(context);
+    await context.route('https://github.com/**', async (route) => {
+      if (route.request().resourceType() === 'document') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'text/html',
+          body: '<!doctype html><html><body>Repository fixture</body></html>',
+        });
+        return;
+      }
+      await route.abort('blockedbyclient');
+    });
+    const serviceWorker = await bootstrapExtensionWorker(context);
+    await configureLocalCredential(serviceWorker);
+    const repositoryPage = await context.newPage();
+    await repositoryPage.goto('https://github.com/facebook/react/pull/42', {
+      waitUntil: 'domcontentloaded',
+      timeout: 5_000,
+    });
+    await configureWorkspacePreferences(serviceWorker, {
+      savedFilters: {
+        schemaVersion: 1,
+        value: [{
+          id: 'disabled-for-repository',
+          name: 'Disabled for repository',
+          view: 'reviewRequests',
+          criteria: { repositories: [], authors: [], draftState: 'any' },
+        }],
+      },
+      repositoryPreferences: {
+        schemaVersion: 1,
+        value: [{
+          repositoryKey: 'facebook/react',
+          featureFlags: { savedFilters: false },
+        }],
+      },
+    });
+    const popup = await openExtensionPopup(context, serviceWorker);
+
+    await expect(popup.getByLabel('Saved filter')).toHaveCount(0);
+    await expect(popup.getByRole('region', { name: 'Command palette' })).toBeVisible();
+    await expect(popup.getByRole('button', { name: 'Open command palette' })).toBeVisible();
   } finally {
     await closeExtension(context);
   }

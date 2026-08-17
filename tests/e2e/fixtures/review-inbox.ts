@@ -2,13 +2,14 @@ export const createSearchItem = (
   number: number,
   title: string,
   updatedAt = '2026-08-13T02:00:00Z',
+  authorLogin = 'react-contributor',
 ) => ({
   id: number,
   number,
   title,
   html_url: `https://github.com/facebook/react/pull/${number}`,
   repository_url: 'https://api.github.com/repos/facebook/react',
-  user: { login: 'react-contributor' },
+  user: { login: authorLogin },
   draft: false,
   updated_at: updatedAt,
   pull_request: {
@@ -29,7 +30,7 @@ export const reviewRequestedItem = createSearchItem(
 
 export const assignedItems = [
   reviewRequestedItem,
-  createSearchItem(202, 'Clarify React server component warnings'),
+  createSearchItem(202, 'Clarify React server component warnings', undefined, 'other-contributor'),
 ];
 
 export const recentItems = [

@@ -1,7 +1,11 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
-import { launchExtension, waitForExtensionWorker } from './extension';
+import {
+  configureWorkspacePreferences,
+  launchExtension,
+  waitForExtensionWorker,
+} from './extension';
 
 const fixturePath = path.resolve(import.meta.dirname, 'fixtures/github-command-palette.html');
 const githubFixtureUrl = 'https://github.com/facebook/react/pull/42';
@@ -109,6 +113,37 @@ test('keeps the page interactive while the palette is closed and follows SPA nav
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(page.locator('#repository')).toBeEnabled();
+  } finally {
+    await context.close();
+  }
+});
+
+test('uses the configured shortcut while keeping editable inputs safe', async () => {
+  const context = await launchExtension();
+  try {
+    await installFixtureRoutes(context);
+    const page = await context.newPage();
+    const worker = await waitForExtensionWorker(context);
+    await configureWorkspacePreferences(worker, {
+      globalPreferences: {
+        schemaVersion: 1,
+        value: {
+          featureFlags: { customCommandPaletteShortcut: true },
+          commandPaletteShortcut: 'primary-shift-p',
+        },
+      },
+    });
+    await openFixture(page);
+
+    const nativeSearch = page.locator('#native-search');
+    await nativeSearch.focus();
+    await page.keyboard.press('Control+Shift+P');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    await page.locator('#same-pr').focus();
+    await page.keyboard.press('Control+Shift+P');
+    await expect(page.getByRole('dialog', { name: 'Command palette' })).toBeVisible();
+    await expect(page.getByRole('dialog').locator('kbd')).toContainText('Ctrl / Cmd Shift P');
   } finally {
     await context.close();
   }
