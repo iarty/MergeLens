@@ -1,9 +1,17 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   DEFAULT_WORKSPACE_PREFERENCES,
+  MAX_SAVED_FILTER_CRITERION_COUNT,
   MAX_SAVED_FILTER_COUNT,
+  WorkspacePreferencesRepositoryError,
   WorkspacePreferencesValidationError,
+  createDeleteSavedFilter,
+  createGetEffectiveWorkspacePreferences,
+  createGetWorkspacePreferences,
+  createListSavedFilters,
   createRepositoryKey,
+  createUpdateWorkspacePreferences,
+  createUpsertSavedFilter,
   matchesSavedInboxFilter,
   normalizeRepositoryKey,
   normalizeSavedInboxFilterDraft,
@@ -12,10 +20,9 @@ import {
   toWorkspacePreferencesError,
   upsertSavedInboxFilter,
   type SavedInboxFilter,
+  type WorkspacePreferencesRepository,
 } from '@/modules/workspace-preferences';
 import type { ReviewInboxPullRequest } from '@/modules/pull-requests';
-import { createGetEffectiveWorkspacePreferences } from '@/modules/workspace-preferences';
-import type { WorkspacePreferencesRepository } from '@/modules/workspace-preferences';
 
 const createFilter = (
   overrides: Partial<SavedInboxFilter> = {},
@@ -47,6 +54,21 @@ const pullRequest: ReviewInboxPullRequest = {
   updatedAt: '2026-08-17T10:00:00.000Z',
   reasons: ['review-requested'],
 };
+
+const createRepository = (
+  overrides: Partial<WorkspacePreferencesRepository> = {},
+): WorkspacePreferencesRepository => ({
+  listSavedFilters: vi.fn(async () => []),
+  upsertSavedFilter: vi.fn(async (filter) => [filter]),
+  deleteSavedFilter: vi.fn(async () => []),
+  getGlobalPreferences: vi.fn(async () => ({})),
+  saveGlobalPreferences: vi.fn(async (preferences) => preferences),
+  listRepositoryPreferences: vi.fn(async () => []),
+  getRepositoryPreferences: vi.fn(async () => null),
+  upsertRepositoryPreferences: vi.fn(async (preferences) => [preferences]),
+  deleteRepositoryPreferences: vi.fn(async () => []),
+  ...overrides,
+});
 
 describe('workspace preferences domain', () => {
   it('resolves repository overrides and falls back safely for malformed context', async () => {
@@ -129,6 +151,25 @@ describe('workspace preferences domain', () => {
     ).toThrow('Saved filter names must be unique');
   });
 
+  it('rejects filters that exceed bounded criterion counts', () => {
+    expect(() =>
+      normalizeSavedInboxFilterDraft({
+        name: 'Too broad',
+        view: 'reviewRequests',
+        criteria: {
+          repositories: Array.from(
+            { length: MAX_SAVED_FILTER_CRITERION_COUNT + 1 },
+            (_, index) => `owner/repository-${index}`,
+          ),
+          authors: [],
+          draftState: 'any',
+        },
+      }),
+    ).toThrow(
+      `repositories cannot contain more than ${MAX_SAVED_FILTER_CRITERION_COUNT} entries`,
+    );
+  });
+
   it('applies default, global, and repository preference precedence', () => {
     expect(resolveEffectiveWorkspacePreferences()).toEqual(
       DEFAULT_WORKSPACE_PREFERENCES,
@@ -172,10 +213,105 @@ describe('workspace preferences domain', () => {
     expect(
       matchesSavedInboxFilter({ ...pullRequest, isDraft: true }, filter),
     ).toBe(false);
+    expect(
+      matchesSavedInboxFilter(
+        {
+          ...pullRequest,
+          repository: { ...pullRequest.repository, fullName: 'other/repo' },
+        },
+        filter,
+      ),
+    ).toBe(false);
   });
 });
 
 describe('workspace preferences application operations', () => {
+  it('orchestrates saved-filter list, upsert, and delete use cases', async () => {
+    const repository = createRepository();
+    const list = createListSavedFilters(repository);
+    const upsert = createUpsertSavedFilter(repository, {
+      createId: () => 'created-filter',
+    });
+    const remove = createDeleteSavedFilter(repository);
+
+    await expect(list()).resolves.toEqual({ status: 'success', data: [] });
+    await expect(upsert({
+      filter: {
+        name: 'Created',
+        view: 'assigned',
+        criteria: { repositories: [], authors: [], draftState: 'any' },
+      },
+    })).resolves.toMatchObject({
+      status: 'success',
+      data: { filter: { id: 'created-filter', name: 'Created' } },
+    });
+    vi.mocked(repository.listSavedFilters).mockResolvedValueOnce([
+      createFilter({ id: 'created-filter', name: 'Created' }),
+    ]);
+    await expect(remove({ filterId: 'created-filter' })).resolves.toEqual({
+      status: 'success',
+      data: [],
+    });
+    expect(repository.upsertSavedFilter).toHaveBeenCalledOnce();
+    expect(repository.deleteSavedFilter).toHaveBeenCalledWith('created-filter');
+  });
+
+  it('loads state and normalizes repository override mutations', async () => {
+    const repository = createRepository();
+    const getPreferences = createGetWorkspacePreferences(repository);
+    const updatePreferences = createUpdateWorkspacePreferences(repository);
+
+    await expect(getPreferences()).resolves.toEqual({
+      status: 'success',
+      data: {
+        savedFilters: [],
+        globalPreferences: {},
+        repositoryPreferences: [],
+      },
+    });
+    await expect(updatePreferences({
+      kind: 'repository-upsert',
+      preferences: {
+        repositoryKey: ' OpenAI/Codex ',
+        featureFlags: { savedFilters: false },
+      },
+    })).resolves.toMatchObject({ status: 'success' });
+    expect(repository.upsertRepositoryPreferences).toHaveBeenCalledWith({
+      repositoryKey: 'openai/codex',
+      featureFlags: { savedFilters: false },
+    });
+  });
+
+  it('maps expected repository failures and defaults effective preferences', async () => {
+    const repositoryError = new WorkspacePreferencesRepositoryError(
+      'storage-unavailable',
+      'Unavailable',
+    );
+    const repository = createRepository({
+      listSavedFilters: vi.fn(async () => {
+        throw repositoryError;
+      }),
+      getGlobalPreferences: vi.fn(async () => {
+        throw repositoryError;
+      }),
+    });
+
+    await expect(createListSavedFilters(repository)()).resolves.toEqual({
+      status: 'error',
+      error: {
+        code: 'storage-unavailable',
+        message: 'Unavailable',
+      },
+    });
+    await expect(
+      createGetEffectiveWorkspacePreferences(repository)('openai/codex'),
+    ).resolves.toEqual({
+      preferences: DEFAULT_WORKSPACE_PREFERENCES,
+      repositoryKey: 'openai/codex',
+      source: 'default',
+    });
+  });
+
   it('upserts and deterministically sorts filters', () => {
     const next = upsertSavedInboxFilter(
       [createFilter({ id: 'z', name: 'Zeta' })],

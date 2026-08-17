@@ -282,6 +282,15 @@ describe('ReviewInbox', () => {
     ).toBeVisible();
   });
 
+  it('hides saved-filter controls when the feature flag is disabled', () => {
+    renderInbox({ savedFiltersEnabled: false });
+
+    expect(screen.queryByLabelText('Saved filter')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'Improve concurrent rendering behavior' }),
+    ).toBeVisible();
+  });
+
   it('resets an active filter that is no longer available', async () => {
     const onFilterChange = vi.fn();
     renderInbox({
