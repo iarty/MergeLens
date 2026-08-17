@@ -1,6 +1,8 @@
 import { useQuery, type QueryObserverResult } from '@tanstack/react-query';
 import { useCallback, useEffect, useState } from 'react';
 import {
+  DEFAULT_WORKSPACE_PREFERENCES,
+  getEffectiveWorkspacePreferences,
   listSavedFilters,
   type SavedInboxFilter,
   type WorkspacePreferencesErrorCode,
@@ -17,33 +19,47 @@ export const WORKSPACE_PREFERENCES_QUERY_KEY = [
 interface SavedFiltersSnapshot {
   savedFilters: SavedInboxFilter[];
   errorCode?: WorkspacePreferencesErrorCode;
+  savedFiltersEnabled: boolean;
 }
 
 export const fetchSavedFilters = async (): Promise<SavedFiltersSnapshot> => {
   logger.debug('Loading saved filters for review inbox');
   try {
+    const preferencesSnapshot = typeof browser === 'undefined'
+      ? {
+          preferences: DEFAULT_WORKSPACE_PREFERENCES,
+          source: 'default' as const,
+        }
+      : await getEffectiveWorkspacePreferences();
     const result = await listSavedFilters();
+    if (!preferencesSnapshot.preferences.featureFlags.savedFilters) {
+      logger.debug('Saved filter picker disabled by workspace feature flag', {
+        source: preferencesSnapshot.source,
+      });
+      return { savedFilters: [], savedFiltersEnabled: false };
+    }
     if (result.status === 'error') {
       logger.warn('Using unfiltered inbox after saved filter load failure', {
         code: result.error.code,
       });
-      return { savedFilters: [], errorCode: result.error.code };
+      return { savedFilters: [], errorCode: result.error.code, savedFiltersEnabled: true };
     }
 
     logger.debug('Loaded saved filters for review inbox', {
       filterCount: result.data.length,
     });
-    return { savedFilters: result.data };
+    return { savedFilters: result.data, savedFiltersEnabled: true };
   } catch (error) {
     logger.error('Saved filter query failed unexpectedly', {
       errorName: error instanceof Error ? error.name : 'UnknownError',
     });
-    return { savedFilters: [], errorCode: 'storage-unavailable' };
+    return { savedFilters: [], errorCode: 'storage-unavailable', savedFiltersEnabled: true };
   }
 };
 
 export interface WorkspacePreferencesQueryState {
   savedFilters: SavedInboxFilter[];
+  savedFiltersEnabled: boolean;
   activeFilterId: string | null;
   activeFilter: SavedInboxFilter | null;
   isLoading: boolean;
@@ -61,6 +77,7 @@ export const useWorkspacePreferences = (): WorkspacePreferencesQueryState => {
     retry: false,
   });
   const savedFilters = query.data?.savedFilters ?? [];
+  const savedFiltersEnabled = query.data?.savedFiltersEnabled ?? true;
   const activeFilter =
     savedFilters.find(({ id }) => id === activeFilterId) ?? null;
 
@@ -117,6 +134,7 @@ export const useWorkspacePreferences = (): WorkspacePreferencesQueryState => {
 
   return {
     savedFilters,
+    savedFiltersEnabled,
     activeFilterId,
     activeFilter,
     isLoading: query.isPending,

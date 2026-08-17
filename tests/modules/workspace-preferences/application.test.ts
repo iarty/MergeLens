@@ -14,6 +14,8 @@ import {
   type SavedInboxFilter,
 } from '@/modules/workspace-preferences';
 import type { ReviewInboxPullRequest } from '@/modules/pull-requests';
+import { createGetEffectiveWorkspacePreferences } from '@/modules/workspace-preferences';
+import type { WorkspacePreferencesRepository } from '@/modules/workspace-preferences';
 
 const createFilter = (
   overrides: Partial<SavedInboxFilter> = {},
@@ -47,6 +49,38 @@ const pullRequest: ReviewInboxPullRequest = {
 };
 
 describe('workspace preferences domain', () => {
+  it('resolves repository overrides and falls back safely for malformed context', async () => {
+    const repository: WorkspacePreferencesRepository = {
+      listSavedFilters: async () => [],
+      upsertSavedFilter: async () => [],
+      deleteSavedFilter: async () => [],
+      getGlobalPreferences: async () => ({
+        featureFlags: { savedFilters: false },
+      }),
+      saveGlobalPreferences: async (preferences) => preferences,
+      listRepositoryPreferences: async () => [],
+      getRepositoryPreferences: async () => ({
+        repositoryKey: 'openai/codex',
+        featureFlags: { savedFilters: true },
+      }),
+      upsertRepositoryPreferences: async () => [],
+      deleteRepositoryPreferences: async () => [],
+    };
+    const resolve = createGetEffectiveWorkspacePreferences(repository);
+
+    await expect(resolve(' OpenAI/Codex ')).resolves.toMatchObject({
+      repositoryKey: 'openai/codex',
+      source: 'repository',
+      preferences: {
+        featureFlags: { savedFilters: true },
+      },
+    });
+    await expect(resolve('malformed')).resolves.toMatchObject({
+      repositoryKey: null,
+      source: 'global',
+      preferences: { featureFlags: { savedFilters: false } },
+    });
+  });
   it('creates canonical repository keys', () => {
     expect(
       createRepositoryKey({ owner: ' OpenAI ', repository: ' Codex ' }),

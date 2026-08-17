@@ -26,6 +26,7 @@ interface ReviewInboxProps {
   onOpenSettings: () => void;
   onOpenCommandPalette: () => void;
   savedFilters: SavedInboxFilter[];
+  savedFiltersEnabled?: boolean;
   activeFilterId: string | null;
   isFiltersLoading: boolean;
   hasFiltersLoadError: boolean;
@@ -153,6 +154,7 @@ export const ReviewInbox = ({
   onOpenSettings,
   onOpenCommandPalette,
   savedFilters,
+  savedFiltersEnabled = true,
   activeFilterId,
   isFiltersLoading,
   hasFiltersLoadError,
@@ -300,7 +302,7 @@ export const ReviewInbox = ({
             </button>
           ))}
         </nav>
-        <div className="review-inbox__filter-control">
+        {savedFiltersEnabled ? <div className="review-inbox__filter-control">
           <label htmlFor="review-inbox-saved-filter">Saved filter</label>
           <select
             id="review-inbox-saved-filter"
@@ -325,7 +327,7 @@ export const ReviewInbox = ({
               Filters unavailable
             </span>
           ) : null}
-        </div>
+        </div> : null}
       </div>
 
       <section className="review-inbox__content" aria-live="polite">

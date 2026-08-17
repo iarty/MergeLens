@@ -1,4 +1,5 @@
 import { createLogger } from '@/shared/logging/logger';
+import type { CommandPaletteShortcutId } from '@/modules/workspace-preferences';
 
 const logger = createLogger('commandPalette.keyboard');
 
@@ -6,6 +7,7 @@ export interface KeyboardControllerCallbacks {
   open: () => void;
   close: () => void;
   isOpen: () => boolean;
+  getShortcut?: () => CommandPaletteShortcutId;
 }
 
 const isEditableTarget = (target: EventTarget | null): boolean => {
@@ -18,10 +20,14 @@ const isEditableTarget = (target: EventTarget | null): boolean => {
     target.matches('input, textarea, select, [contenteditable="true"]')
   );
 };
-export const isPaletteShortcut = (event: KeyboardEvent): boolean => {
-  const isK = event.key.toLowerCase() === 'k';
+export const isPaletteShortcut = (
+  event: KeyboardEvent,
+  shortcut: CommandPaletteShortcutId = 'primary-k',
+): boolean => {
+  const isK = event.key.toLowerCase() === (shortcut === 'primary-shift-p' ? 'p' : 'k');
   const hasPrimaryModifier = event.metaKey || event.ctrlKey;
-  const hasConflictingModifier = event.altKey || event.shiftKey;
+  const requiresShift = shortcut !== 'primary-k';
+  const hasConflictingModifier = event.altKey || event.shiftKey !== requiresShift;
   return isK && hasPrimaryModifier && !hasConflictingModifier;
 };
 
@@ -39,7 +45,7 @@ export const createKeyboardController = (
       return;
     }
 
-    if (!isPaletteShortcut(event)) {
+    if (!isPaletteShortcut(event, callbacks.getShortcut?.())) {
       return;
     }
 
