@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ReviewInbox } from '@/features/review-inbox/ReviewInbox';
 import {
@@ -12,7 +12,7 @@ const renderInbox = (
   const onRefresh = vi.fn();
   const onOpenSettings = vi.fn();
   const onOpenCommandPalette = vi.fn();
-  render(
+  const renderResult = render(
     <ReviewInbox
       data={createReviewInboxData()}
       isLoading={false}
@@ -20,10 +20,15 @@ const renderInbox = (
       onRefresh={onRefresh}
       onOpenSettings={onOpenSettings}
       onOpenCommandPalette={onOpenCommandPalette}
+      savedFilters={[]}
+      activeFilterId={null}
+      isFiltersLoading={false}
+      hasFiltersLoadError={false}
+      onFilterChange={vi.fn()}
       {...props}
     />,
   );
-  return { onRefresh, onOpenSettings, onOpenCommandPalette };
+  return { ...renderResult, onRefresh, onOpenSettings, onOpenCommandPalette };
 };
 
 describe('ReviewInbox', () => {
@@ -139,5 +144,146 @@ describe('ReviewInbox', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: /Assigned/ }));
     expect(screen.getByRole('status')).toHaveTextContent('All clear');
+  });
+
+  it('selects a saved filter, switches view, and recomputes visible counts', () => {
+    const matchingItem = createReviewInboxItem();
+    const hiddenItem = createReviewInboxItem({
+      id: '303',
+      number: 303,
+      title: 'Improve the Next.js router',
+      repository: {
+        owner: 'vercel',
+        name: 'next.js',
+        fullName: 'vercel/next.js',
+        url: 'https://github.com/vercel/next.js',
+      },
+    });
+    const data = createReviewInboxData(matchingItem);
+    data.assigned = { status: 'success', items: [matchingItem, hiddenItem] };
+    const savedFilter = {
+      id: 'react-assigned',
+      name: 'React assigned',
+      view: 'assigned' as const,
+      criteria: {
+        repositories: ['facebook/react'],
+        authors: [],
+        draftState: 'any' as const,
+      },
+    };
+    const onFilterChange = vi.fn();
+    const { rerender } = render(
+      <ReviewInbox
+        data={data}
+        isLoading={false}
+        isRefreshing={false}
+        onRefresh={vi.fn()}
+        onOpenSettings={vi.fn()}
+        onOpenCommandPalette={vi.fn()}
+        savedFilters={[savedFilter]}
+        activeFilterId={null}
+        isFiltersLoading={false}
+        hasFiltersLoadError={false}
+        onFilterChange={onFilterChange}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('Saved filter'), {
+      target: { value: 'react-assigned' },
+    });
+    expect(onFilterChange).toHaveBeenCalledWith('react-assigned');
+
+    rerender(
+      <ReviewInbox
+        data={data}
+        isLoading={false}
+        isRefreshing={false}
+        onRefresh={vi.fn()}
+        onOpenSettings={vi.fn()}
+        onOpenCommandPalette={vi.fn()}
+        savedFilters={[savedFilter]}
+        activeFilterId="react-assigned"
+        isFiltersLoading={false}
+        hasFiltersLoadError={false}
+        onFilterChange={onFilterChange}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: /Assigned1/ })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(
+      screen.getByRole('link', { name: 'Improve concurrent rendering behavior' }),
+    ).toBeVisible();
+    expect(screen.queryByRole('link', { name: 'Improve the Next.js router' })).toBeNull();
+
+    fireEvent.change(screen.getByLabelText('Saved filter'), {
+      target: { value: '' },
+    });
+    expect(onFilterChange).toHaveBeenLastCalledWith(null);
+  });
+
+  it('renders a filtered empty state without masking section errors', () => {
+    const savedFilter = {
+      id: 'draft-review',
+      name: 'Draft reviews',
+      view: 'reviewRequests' as const,
+      criteria: { repositories: [], authors: [], draftState: 'draft' as const },
+    };
+    const data = createReviewInboxData(
+      createReviewInboxItem({ isDraft: false }),
+    );
+    const { rerender } = renderInbox({
+      data,
+      savedFilters: [savedFilter],
+      activeFilterId: 'draft-review',
+    });
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'No pull requests match this filter.',
+    );
+
+    data.reviewRequests = {
+      status: 'error',
+      error: { code: 'rate-limited', message: 'Try later' },
+    };
+    rerender(
+      <ReviewInbox
+        data={data}
+        isLoading={false}
+        isRefreshing={false}
+        onRefresh={vi.fn()}
+        onOpenSettings={vi.fn()}
+        onOpenCommandPalette={vi.fn()}
+        savedFilters={[savedFilter]}
+        activeFilterId="draft-review"
+        isFiltersLoading={false}
+        hasFiltersLoadError={false}
+        onFilterChange={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent('Search limit reached');
+  });
+
+  it('shows an unfiltered inbox when saved filters are unavailable', () => {
+    renderInbox({ hasFiltersLoadError: true });
+
+    expect(screen.getByRole('status')).toHaveTextContent('Filters unavailable');
+    expect(screen.getByLabelText('Saved filter')).toBeDisabled();
+    expect(
+      screen.getByRole('link', { name: 'Improve concurrent rendering behavior' }),
+    ).toBeVisible();
+  });
+
+  it('resets an active filter that is no longer available', async () => {
+    const onFilterChange = vi.fn();
+    renderInbox({
+      activeFilterId: 'deleted-filter',
+      savedFilters: [],
+      onFilterChange,
+    });
+
+    await waitFor(() => expect(onFilterChange).toHaveBeenCalledWith(null));
   });
 });
