@@ -1,5 +1,6 @@
 import { ReviewInbox } from '@/features/review-inbox/ReviewInbox';
 import { useReviewInboxQuery } from '@/features/review-inbox/useReviewInboxQuery';
+import { useWorkspacePreferences } from '@/features/review-inbox/useWorkspacePreferences';
 import { createLogger } from '@/shared/logging/logger';
 import { sendMessage } from '@/shared/messaging/protocol';
 import './App.css';
@@ -8,6 +9,7 @@ const logger = createLogger('popup.app');
 
 const App = () => {
   const inboxQuery = useReviewInboxQuery();
+  const workspacePreferences = useWorkspacePreferences();
 
   const handleRefresh = () => {
     logger.info('Refreshing review inbox from popup');
@@ -51,6 +53,11 @@ const App = () => {
       onRefresh={handleRefresh}
       onOpenSettings={handleOpenSettings}
       onOpenCommandPalette={handleOpenCommandPalette}
+      savedFilters={workspacePreferences.savedFilters}
+      activeFilterId={workspacePreferences.activeFilterId}
+      isFiltersLoading={workspacePreferences.isLoading}
+      hasFiltersLoadError={workspacePreferences.hasLoadError}
+      onFilterChange={workspacePreferences.selectFilter}
     />
   );
 };
