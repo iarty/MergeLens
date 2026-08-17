@@ -78,3 +78,10 @@ export const toWorkspacePreferencesError = (
 export const getWorkspacePreferencesErrorName = (error: unknown): string => {
   return error instanceof Error ? error.name : 'UnknownError';
 };
+
+export const isExpectedWorkspacePreferencesError = (error: unknown): boolean => {
+  return (
+    error instanceof WorkspacePreferencesValidationError ||
+    error instanceof WorkspacePreferencesRepositoryError
+  );
+};

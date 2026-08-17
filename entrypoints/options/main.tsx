@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { TokenSettings } from '@/features/settings/TokenSettings';
 import { QuickLinksSettings } from '@/features/settings/QuickLinksSettings';
 import { ReviewTemplatesSettings } from '@/features/settings/ReviewTemplatesSettings';
+import { WorkspacePreferencesSettings } from '@/features/settings/WorkspacePreferencesSettings';
 import './style.css';
 
 const rootElement = document.getElementById('root');
@@ -17,6 +18,7 @@ ReactDOM.createRoot(rootElement).render(
       <TokenSettings />
       <QuickLinksSettings />
       <ReviewTemplatesSettings />
+      <WorkspacePreferencesSettings />
     </div>
   </React.StrictMode>,
 );
