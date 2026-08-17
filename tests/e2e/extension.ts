@@ -60,6 +60,29 @@ export const configureLocalCredential = async (
   ]);
 };
 
+export const configureWorkspacePreferences = async (
+  serviceWorker: Worker,
+  records: {
+    savedFilters?: unknown;
+    globalPreferences?: unknown;
+    repositoryPreferences?: unknown;
+  },
+): Promise<void> => {
+  await serviceWorker.evaluate(async (nextRecords) => {
+    await browser.storage.sync.set({
+      ...(nextRecords.savedFilters === undefined
+        ? {}
+        : { 'workspacePreferences.savedFilters': nextRecords.savedFilters }),
+      ...(nextRecords.globalPreferences === undefined
+        ? {}
+        : { 'workspacePreferences.global': nextRecords.globalPreferences }),
+      ...(nextRecords.repositoryPreferences === undefined
+        ? {}
+        : { 'workspacePreferences.repositories': nextRecords.repositoryPreferences }),
+    });
+  }, records);
+};
+
 export const waitForExtensionWorker = (
   context: BrowserContext,
 ): Promise<Worker> => {
