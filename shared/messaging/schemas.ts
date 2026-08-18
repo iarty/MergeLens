@@ -218,6 +218,36 @@ export const toolbarDataSchema = z.object({
   checks: z.array(checkSummarySchema),
   actionsUrl: z.url(),
   quickLinks: quickLinksDataSchema.optional(),
+  estimation: z.object({
+    score: z.number().int().min(0).max(100),
+    band: z.enum(['low', 'medium', 'high', 'critical']),
+    breakdown: z.object({
+      changes: z.number().int().nonnegative(),
+      files: z.number().int().nonnegative(),
+      generatedFiles: z.number().int().nonnegative(),
+      checks: z.number().int().nonnegative(),
+    }),
+    counts: z.object({
+      files: z.number().int().nonnegative(),
+      generatedFiles: z.number().int().nonnegative(),
+      additions: z.number().int().nonnegative(),
+      deletions: z.number().int().nonnegative(),
+      checks: z.object({
+        total: z.number().int().nonnegative(),
+        failing: z.number().int().nonnegative(),
+        inProgress: z.number().int().nonnegative(),
+        unknown: z.number().int().nonnegative(),
+      }),
+    }),
+    uncertain: z.boolean(),
+    truncation: z.object({
+      files: z.boolean(),
+      checks: z.boolean(),
+      fileLimit: z.number().int().positive().optional(),
+      checkLimit: z.number().int().positive().optional(),
+    }),
+    heuristicsVersion: z.string().min(1).max(32),
+  }).optional(),
 });
 
 export const quickLinksRequestSchema = toolbarRequestSchema;
