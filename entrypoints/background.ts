@@ -17,12 +17,14 @@ import {
   DexieLocalReviewRepository,
 } from '@/modules/local-review';
 import { readConfiguredQuickLinks } from '@/modules/quick-links/settings';
+import { registerReviewNotificationBackground } from '@/modules/review-notifications';
 import { createLogger } from '@/shared/logging/logger';
 import { onMessage } from '@/shared/messaging/protocol';
 
 const logger = createLogger('background');
 
 export default defineBackground(() => {
+  registerReviewNotificationBackground();
   const getPullRequestToolbarData = createGetPullRequestToolbarData(
     new OctokitPullRequestReader(),
   );
