@@ -17,11 +17,23 @@ export default defineContentScript({
   matches: ['https://github.com/*'],
   cssInjectionMode: 'ui',
   async main(ctx) {
-    const toolbar = await mountPrToolbar(ctx);
     const paletteUi = await mountCommandPaletteUi(ctx);
+    let toolbar: Awaited<ReturnType<typeof mountPrToolbar>> | null = null;
     createCommandPaletteController(ctx, paletteUi, window, {
-      openLocalReviewWorkspace: toolbar.openLocalReviewWorkspace,
-      refreshPullRequestToolbar: toolbar.refresh,
+      openLocalReviewWorkspace: async () => {
+        if (!toolbar) {
+          logger.warn('[FIX:command-palette-runtime] Local review action unavailable before toolbar initialization');
+          return;
+        }
+        await toolbar.openLocalReviewWorkspace();
+      },
+      refreshPullRequestToolbar: async () => {
+        if (!toolbar) {
+          logger.warn('[FIX:command-palette-runtime] Toolbar refresh unavailable before toolbar initialization');
+          return;
+        }
+        await toolbar.refresh();
+      },
       registerOpenRequest: (open) =>
         onMessage('openCommandPalette', () => {
           logger.info('[FIX:command-palette-popup] Opening palette from extension popup');
@@ -39,7 +51,21 @@ export default defineContentScript({
           if (category !== 'saved-filters') refresh();
         }),
     });
+
+    try {
+      toolbar = await mountPrToolbar(ctx);
+      logger.info('[FIX:command-palette-runtime] PR toolbar initialized after command palette');
+    } catch (error: unknown) {
+      logger.error('[FIX:command-palette-runtime] PR toolbar initialization failed; command palette remains available', {
+        errorName: error instanceof Error ? error.name : 'UnknownError',
+      });
+    }
+
     observePageContext(ctx, window, (context) => {
+      if (!toolbar) {
+        logger.warn('[FIX:command-palette-runtime] Ignored toolbar reconciliation before initialization');
+        return;
+      }
       void toolbar.reconcile(context);
     });
     logger.info('Initialized GitHub content surfaces');

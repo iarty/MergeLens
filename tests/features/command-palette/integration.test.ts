@@ -144,6 +144,33 @@ describe('command palette integration', () => {
     expect(removeOpenRequest).toHaveBeenCalledOnce();
   });
 
+  it('keeps opening when workspace preference subscription is unavailable', () => {
+    history.replaceState({}, '', '/facebook/react/pull/42');
+    const fakeContext = createFakeContext();
+    const ui = createFakeUi();
+    let openFromRequest: (() => void) | undefined;
+
+    expect(() => createCommandPaletteController(
+      fakeContext.context as never,
+      ui,
+      window,
+      {
+        subscribeWorkspacePreferences: () => {
+          throw new Error('Storage change events are unavailable');
+        },
+        registerOpenRequest: (open) => {
+          openFromRequest = open;
+          return vi.fn();
+        },
+      },
+    )).not.toThrow();
+
+    expect(ui.mount).toHaveBeenCalledOnce();
+    openFromRequest?.();
+    expect(ui.render.mock.lastCall?.[0]).toMatchObject({ isOpen: true });
+    fakeContext.invalidate();
+  });
+
   it('applies refreshed workspace shortcuts and removes the subscription', async () => {
     history.replaceState({}, '', '/facebook/react/pull/42');
     const fakeContext = createFakeContext();
