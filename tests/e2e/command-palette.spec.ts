@@ -44,13 +44,20 @@ test('keeps Chrome and Firefox manifests within the existing permission boundary
   for (const manifestText of manifests) {
     const manifest = JSON.parse(manifestText) as {
       permissions?: string[];
+      optional_permissions?: string[];
       host_permissions?: string[];
     };
     const permissions = new Set([
       ...(manifest.permissions ?? []),
       ...(manifest.host_permissions ?? []),
     ]);
-    expect([...permissions].sort()).toEqual(['https://api.github.com/*', 'storage']);
+    expect([...permissions].sort()).toEqual([
+      'alarms',
+      'https://api.github.com/*',
+      'storage',
+    ]);
+    expect(manifest.optional_permissions).toEqual(['notifications']);
+    expect(permissions).not.toContain('tabs');
   }
 });
 
@@ -82,7 +89,7 @@ test('opens, searches, executes, and closes the command palette', async () => {
 
     await page.keyboard.press('Control+K');
     const commandSearch = page.getByRole('dialog').getByRole('searchbox');
-    await commandSearch.fill('refresh toolbar');
+    await commandSearch.fill('refresh pull');
     await commandSearch.press('Enter');
     await expect(page).toHaveURL(/\/facebook\/react\/pull\/42$/);
     await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -103,7 +110,7 @@ test('keeps the page interactive while the palette is closed and follows SPA nav
 
     const host = paletteHost(page);
     await expect(host).toHaveCount(1);
-    await expect(host).toHaveCSS('position', 'relative');
+    await expect(host).toHaveCSS('position', 'static');
     await expect(page.locator('#next-pr')).toBeEnabled();
     await page.locator('#next-pr').click();
     await expect(page).toHaveURL(/\/facebook\/react\/pull\/43$/);
