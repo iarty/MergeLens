@@ -38,6 +38,10 @@ vi.mock('@/modules/pull-requests', () => ({
   createGetReviewInbox: vi.fn(() => vi.fn()),
 }));
 
+vi.mock('@/modules/review-notifications', () => ({
+  registerReviewNotificationBackground: vi.fn(),
+}));
+
 vi.mock('@/modules/quick-links', () => ({
   OctokitQuickLinksReader: vi.fn(),
   createGetPullRequestQuickLinks: vi.fn(() => vi.fn()),
