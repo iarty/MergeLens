@@ -267,11 +267,19 @@ export const createCommandPaletteController = (
   });
   keyboard.start();
   void refreshWorkspacePreferences();
-  const removePreferencesSubscription =
-    options.subscribeWorkspacePreferences?.(() => {
-      logger.info('Accepted workspace preference refresh notification');
-      void refreshWorkspacePreferences();
-    }) ?? (() => {});
+  let removePreferencesSubscription = () => {};
+  if (options.subscribeWorkspacePreferences) {
+    try {
+      removePreferencesSubscription = options.subscribeWorkspacePreferences(() => {
+        logger.info('Accepted workspace preference refresh notification');
+        void refreshWorkspacePreferences();
+      });
+    } catch (error: unknown) {
+      logger.warn('[FIX:command-palette-runtime] Workspace preference subscription unavailable; continuing with current shortcut', {
+        errorName: error instanceof Error ? error.name : 'UnknownError',
+      });
+    }
+  }
   const removeOpenMessageListener = options.registerOpenRequest?.(open) ?? (() => {});
   ui.mount();
   ui.render({
