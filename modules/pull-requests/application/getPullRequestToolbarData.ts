@@ -8,6 +8,7 @@ import type {
   ToolbarResponse,
 } from '@/shared/messaging/schemas';
 import type { PullRequestReader } from '../ports/PullRequestReader';
+import { estimatePullRequest } from '@/modules/pull-request-estimation';
 
 const logger = createLogger('pullRequests.getToolbarData');
 
@@ -56,12 +57,24 @@ export const createGetPullRequestToolbarData = (
         pullNumber: request.context.pullNumber,
       });
 
+      const resultData = result.status === 'success' && result.data.files !== undefined
+        ? {
+            ...result.data,
+            estimation: estimatePullRequest({
+              files: result.data.files,
+              checks: result.data.checks,
+              truncated: { files: result.data.filesTruncated === true, checks: false },
+            }),
+          }
+        : result.status === 'success'
+          ? result.data
+          : undefined;
       const response =
         result.status === 'success'
           ? {
               status: 'success' as const,
               correlationId: request.correlationId,
-              data: result.data,
+              data: resultData,
             }
           : {
               status: 'error' as const,
@@ -73,6 +86,7 @@ export const createGetPullRequestToolbarData = (
       if (validatedResponse.status === 'success') {
         logger.info('PR toolbar data request completed', {
           checkCount: validatedResponse.data.checks.length,
+          hasEstimation: validatedResponse.data.estimation !== undefined,
         });
       } else {
         logger.warn('PR toolbar data request returned an expected error', {
