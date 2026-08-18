@@ -6,6 +6,8 @@ import {
   MAX_SAVED_FILTER_COUNT,
   MAX_SAVED_FILTER_CRITERION_COUNT,
   MAX_SAVED_FILTER_NAME_LENGTH,
+  MAX_ESTIMATION_PATTERN_COUNT,
+  MAX_ESTIMATION_PATTERN_LENGTH,
   WorkspacePreferencesRepositoryError,
   WorkspacePreferencesValidationError,
   normalizeGlobalWorkspacePreferences,
@@ -39,9 +41,27 @@ const shortcutSchema = z.enum([
   'primary-shift-k',
   'primary-shift-p',
 ]);
+const estimationPreferencesSchema = z.object({
+  version: z.string().trim().min(1).max(32).optional(),
+  weights: z.object({
+    changes: z.number().finite().positive().max(100_000).optional(),
+    files: z.number().finite().positive().max(100_000).optional(),
+    generatedFiles: z.number().finite().positive().max(100_000).optional(),
+    checks: z.number().finite().positive().max(100_000).optional(),
+  }).strict().optional(),
+  thresholds: z.object({
+    medium: z.number().finite().positive().max(100_000).optional(),
+    high: z.number().finite().positive().max(100_000).optional(),
+    critical: z.number().finite().positive().max(100_000).optional(),
+  }).strict().optional(),
+  maxChangeCount: z.number().finite().positive().max(100_000).optional(),
+  maxFileCount: z.number().finite().positive().max(100_000).optional(),
+  generatedFilePatterns: z.array(z.string().trim().min(1).max(MAX_ESTIMATION_PATTERN_LENGTH)).max(MAX_ESTIMATION_PATTERN_COUNT).optional(),
+}).strict();
 const preferenceOverridesShape = {
   featureFlags: featureFlagsSchema.optional(),
   commandPaletteShortcut: shortcutSchema.optional(),
+  pullRequestEstimation: estimationPreferencesSchema.optional(),
 };
 const globalPreferencesSchema = z
   .object(preferenceOverridesShape)

@@ -15,6 +15,8 @@ export {
   MAX_SAVED_FILTER_CRITERION_COUNT,
   MAX_SAVED_FILTER_NAME_LENGTH,
   MAX_REPOSITORY_PREFERENCE_COUNT,
+  MAX_ESTIMATION_PATTERN_COUNT,
+  MAX_ESTIMATION_PATTERN_LENGTH,
   WorkspacePreferencesRepositoryError,
   WorkspacePreferencesValidationError,
   createRepositoryKey,
@@ -47,6 +49,7 @@ export type {
   SavedInboxFilterDraft,
   WorkspaceFeatureFlags,
   WorkspacePreferenceOverrides,
+  PullRequestEstimationPreferenceOverrides,
   WorkspacePreferencesErrorCode,
 } from './domain/WorkspacePreferences';
 export {
