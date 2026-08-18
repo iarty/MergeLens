@@ -115,6 +115,23 @@ const ErrorState = ({
   );
 };
 
+const EstimationSummary = ({ data }: Pick<Extract<PRToolbarProps['state'], { status: 'success' }>, 'data'>) => {
+  const estimate = data.estimation;
+  if (!estimate) return null;
+  return (
+    <div className="pr-toolbar__estimation" aria-label="Pull request estimate">
+      <span className={`pr-toolbar__estimate-band pr-toolbar__estimate-band--${estimate.band}`}>
+        {estimate.band}
+      </span>
+      <span className="pr-toolbar__estimate-score">{estimate.score}/100</span>
+      <span className="pr-toolbar__estimate-drivers">
+        {estimate.counts.files} files, {estimate.counts.additions + estimate.counts.deletions} changes
+      </span>
+      {estimate.uncertain ? <span className="pr-toolbar__estimate-uncertain">Partial data</span> : null}
+    </div>
+  );
+};
+
 const SuccessState = ({
   data,
   quickLinksError,
@@ -186,6 +203,8 @@ const SuccessState = ({
           <span className="pr-toolbar__remaining">+{remainingCheckCount}</span>
         ) : null}
       </div>
+
+      <EstimationSummary data={data} />
 
       <a
         className="pr-toolbar__actions-link"
@@ -282,7 +301,13 @@ export const PRToolbar = ({
 }: PRToolbarProps) => {
   useEffect(() => {
     const checkCount = state.status === 'success' ? state.data.checks.length : undefined;
-    logger.debug('PR toolbar state changed', { status: state.status, checkCount });
+    const estimation = state.status === 'success' ? state.data.estimation : undefined;
+    logger.debug('PR toolbar state changed', {
+      status: state.status,
+      checkCount,
+      hasEstimation: estimation !== undefined,
+      estimationBand: estimation?.band,
+    });
 
     if (state.status === 'error') {
       logger.warn('PR toolbar rendered a recoverable error state', {
