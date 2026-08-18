@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CheckStatus } from '../domain/CheckSummary';
-import type { PullRequestToolbarData } from '../domain/PullRequestSummary';
+import type { PullRequestFileSummary, PullRequestToolbarData } from '../domain/PullRequestSummary';
 
 const pullRequestResponseSchema = z.object({
   html_url: z.url(),
@@ -42,6 +42,31 @@ const checkRunsResponseSchema = z.object({
     }),
   ),
 });
+
+const pullRequestFilesResponseSchema = z.array(z.object({
+  filename: z.string().min(1),
+  additions: z.number().int().nonnegative(),
+  deletions: z.number().int().nonnegative(),
+  changes: z.number().int().nonnegative(),
+  status: z.string().optional(),
+  generated: z.boolean().optional(),
+}));
+
+const generatedFilePatterns = ['*.lock', 'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml'];
+const matchesGeneratedPattern = (path: string): boolean => generatedFilePatterns.some((pattern) =>
+  pattern.startsWith('*.') ? path.toLowerCase().endsWith(pattern.slice(1)) : path.toLowerCase().endsWith(pattern.toLowerCase()),
+);
+
+export const mapPullRequestFiles = (input: unknown): PullRequestFileSummary[] => {
+  const files = pullRequestFilesResponseSchema.parse(input);
+  return files.map((file) => ({
+    path: file.filename,
+    additions: file.additions,
+    deletions: file.deletions,
+    changes: file.changes,
+    isGenerated: file.generated === true || matchesGeneratedPattern(file.filename),
+  }));
+};
 
 const mapCheckStatus = (
   status:
@@ -98,10 +123,13 @@ export const mapGitHubResponse = (
   checkRunsInput: unknown,
   owner: string,
   repository: string,
+  filesInput?: unknown,
+  filesTruncated = false,
 ): PullRequestToolbarData => {
   const pullRequest = pullRequestResponseSchema.parse(pullRequestInput);
   const checkRuns = checkRunsResponseSchema.parse(checkRunsInput);
 
+  const files = filesInput === undefined ? undefined : mapPullRequestFiles(filesInput);
   return {
     pullRequest: {
       title: pullRequest.title,
@@ -117,5 +145,6 @@ export const mapGitHubResponse = (
       detailsUrl: checkRun.details_url,
     })),
     actionsUrl: `https://github.com/${encodeURIComponent(owner)}/${encodeURIComponent(repository)}/actions`,
+    ...(files === undefined ? {} : { files, filesTruncated }),
   };
 };

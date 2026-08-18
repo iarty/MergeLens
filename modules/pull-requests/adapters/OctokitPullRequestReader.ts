@@ -147,15 +147,41 @@ export class OctokitPullRequestReader implements PullRequestReader {
         ref: headSha,
         per_page: 100,
       });
+      const listFiles = octokit.rest.pulls.listFiles;
+      let filesData: unknown[] | undefined;
+      let filesTruncated = false;
+      if (listFiles) {
+        try {
+          const filesResponse = await listFiles({
+            owner: input.owner,
+            repo: input.repository,
+            pull_number: input.pullNumber,
+            per_page: 100,
+            page: 1,
+          });
+          filesData = filesResponse.data;
+          const filesHeaders = filesResponse.headers as Record<string, string | undefined>;
+          filesTruncated = filesResponse.data.length >= 100 ||
+            Number(filesHeaders['x-total-count'] ?? 0) > filesResponse.data.length;
+        } catch (error) {
+          logger.warn('Changed-file metadata is unavailable; preserving PR toolbar data', {
+            errorName: error instanceof Error ? error.name : 'UnknownError',
+          });
+        }
+      }
       const data = mapGitHubResponse(
         pullRequestResponse.data,
         checkRunsResponse.data,
         input.owner,
         input.repository,
+        filesData,
+        filesTruncated,
       );
 
       logger.info('Loaded PR toolbar data from GitHub', {
         checkCount: data.checks.length,
+        fileCount: data.files?.length ?? 0,
+        filesTruncated,
         rateLimitRemaining:
           checkRunsResponse.headers['x-ratelimit-remaining'] ?? 'unknown',
       });
