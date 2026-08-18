@@ -1,9 +1,15 @@
 import type { ReviewInboxPullRequest } from '@/modules/pull-requests';
+import {
+  DEFAULT_PULL_REQUEST_ESTIMATION_HEURISTICS,
+  type PullRequestEstimationHeuristics,
+} from '@/modules/pull-request-estimation';
 
 export const MAX_SAVED_FILTER_COUNT = 25;
 export const MAX_SAVED_FILTER_NAME_LENGTH = 80;
 export const MAX_SAVED_FILTER_CRITERION_COUNT = 20;
 export const MAX_REPOSITORY_PREFERENCE_COUNT = 100;
+export const MAX_ESTIMATION_PATTERN_COUNT = 50;
+export const MAX_ESTIMATION_PATTERN_LENGTH = 120;
 
 const MAX_IDENTIFIER_LENGTH = 128;
 const MAX_REPOSITORY_SEGMENT_LENGTH = 100;
@@ -51,9 +57,19 @@ export interface WorkspaceFeatureFlags {
   customCommandPaletteShortcut: boolean;
 }
 
+export type PullRequestEstimationPreferenceOverrides = {
+  version?: string;
+  weights?: Partial<PullRequestEstimationHeuristics['weights']>;
+  thresholds?: Partial<PullRequestEstimationHeuristics['thresholds']>;
+  maxChangeCount?: number;
+  maxFileCount?: number;
+  generatedFilePatterns?: string[];
+};
+
 export interface WorkspacePreferenceOverrides {
   featureFlags?: Partial<WorkspaceFeatureFlags>;
   commandPaletteShortcut?: CommandPaletteShortcutId;
+  pullRequestEstimation?: PullRequestEstimationPreferenceOverrides;
 }
 
 export interface GlobalWorkspacePreferences
@@ -67,6 +83,7 @@ export interface RepositoryWorkspacePreferences
 export interface EffectiveWorkspacePreferences {
   featureFlags: WorkspaceFeatureFlags;
   commandPaletteShortcut: CommandPaletteShortcutId;
+  pullRequestEstimation?: PullRequestEstimationHeuristics;
 }
 
 export const DEFAULT_WORKSPACE_PREFERENCES: EffectiveWorkspacePreferences = {
@@ -326,10 +343,57 @@ const normalizeFeatureFlags = (
   return normalized;
 };
 
+const normalizeEstimationPreferences = (
+  preferences: PullRequestEstimationPreferenceOverrides | undefined,
+): PullRequestEstimationPreferenceOverrides | undefined => {
+  if (preferences === undefined) return undefined;
+  const normalizePositive = (value: number | undefined, field: string) => {
+    if (value === undefined) return undefined;
+    if (!Number.isFinite(value) || value <= 0 || value > 100_000) {
+      throw new WorkspacePreferencesValidationError(`${field} must be a bounded positive number`, field);
+    }
+    return value;
+  };
+  const weights = preferences.weights
+    ? Object.fromEntries(
+        (['changes', 'files', 'generatedFiles', 'checks'] as const)
+          .flatMap((key) => {
+            const value = normalizePositive(preferences.weights?.[key], `pullRequestEstimation.weights.${key}`);
+            return value === undefined ? [] : [[key, value]];
+          }),
+      )
+    : undefined;
+  const thresholds = preferences.thresholds
+    ? Object.fromEntries(
+        (['medium', 'high', 'critical'] as const).flatMap((key) => {
+          const value = normalizePositive(preferences.thresholds?.[key], `pullRequestEstimation.thresholds.${key}`);
+          return value === undefined ? [] : [[key, value]];
+        }),
+      )
+    : undefined;
+  const patterns = preferences.generatedFilePatterns === undefined
+    ? undefined
+    : [...new Set(preferences.generatedFilePatterns.map((pattern) => {
+        if (typeof pattern !== 'string' || pattern.trim().length === 0 || pattern.trim().length > MAX_ESTIMATION_PATTERN_LENGTH) {
+          throw new WorkspacePreferencesValidationError('generatedFilePatterns contains an invalid pattern', 'pullRequestEstimation.generatedFilePatterns');
+        }
+        return pattern.trim().toLowerCase();
+      }))].slice(0, MAX_ESTIMATION_PATTERN_COUNT);
+  return {
+    ...(preferences.version === undefined ? {} : { version: preferences.version.trim().slice(0, 32) }),
+    ...(weights && Object.keys(weights).length > 0 ? { weights } : {}),
+    ...(thresholds && Object.keys(thresholds).length > 0 ? { thresholds } : {}),
+    ...(preferences.maxChangeCount === undefined ? {} : { maxChangeCount: normalizePositive(preferences.maxChangeCount, 'pullRequestEstimation.maxChangeCount') }),
+    ...(preferences.maxFileCount === undefined ? {} : { maxFileCount: normalizePositive(preferences.maxFileCount, 'pullRequestEstimation.maxFileCount') }),
+    ...(patterns === undefined ? {} : { generatedFilePatterns: patterns }),
+  };
+};
+
 export const normalizeGlobalWorkspacePreferences = (
   preferences: GlobalWorkspacePreferences,
 ): GlobalWorkspacePreferences => {
   const featureFlags = normalizeFeatureFlags(preferences.featureFlags);
+  const pullRequestEstimation = normalizeEstimationPreferences(preferences.pullRequestEstimation);
   return {
     ...(featureFlags === undefined ? {} : { featureFlags }),
     ...(preferences.commandPaletteShortcut === undefined
@@ -339,6 +403,7 @@ export const normalizeGlobalWorkspacePreferences = (
             preferences.commandPaletteShortcut,
           ),
         }),
+    ...(pullRequestEstimation === undefined ? {} : { pullRequestEstimation }),
   };
 };
 
@@ -359,6 +424,7 @@ export const resolveEffectiveWorkspacePreferences = (
   const repository = repositoryPreferences
     ? normalizeRepositoryWorkspacePreferences(repositoryPreferences)
     : undefined;
+  const estimationOverrides = global.pullRequestEstimation || repository?.pullRequestEstimation;
 
   return {
     featureFlags: {
@@ -370,6 +436,25 @@ export const resolveEffectiveWorkspacePreferences = (
       repository?.commandPaletteShortcut ??
       global.commandPaletteShortcut ??
       DEFAULT_WORKSPACE_PREFERENCES.commandPaletteShortcut,
+    ...(estimationOverrides === undefined
+      ? {}
+      : {
+          pullRequestEstimation: {
+            ...DEFAULT_PULL_REQUEST_ESTIMATION_HEURISTICS,
+            ...global.pullRequestEstimation,
+            ...repository?.pullRequestEstimation,
+            weights: {
+              ...DEFAULT_PULL_REQUEST_ESTIMATION_HEURISTICS.weights,
+              ...global.pullRequestEstimation?.weights,
+              ...repository?.pullRequestEstimation?.weights,
+            },
+            thresholds: {
+              ...DEFAULT_PULL_REQUEST_ESTIMATION_HEURISTICS.thresholds,
+              ...global.pullRequestEstimation?.thresholds,
+              ...repository?.pullRequestEstimation?.thresholds,
+            },
+          },
+        }),
   };
 };
 
