@@ -246,7 +246,7 @@ test('persists a saved filter after reopening the settings surface', async () =>
   }
 });
 
-test('applies a repository feature-flag override without hiding other controls', async () => {
+test('applies a global feature-flag override without hiding other controls', async () => {
   const context = await launchExtension();
   try {
     await installSuccessfulSearchRoutes(context);
@@ -263,11 +263,6 @@ test('applies a repository feature-flag override without hiding other controls',
     });
     const serviceWorker = await bootstrapExtensionWorker(context);
     await configureLocalCredential(serviceWorker);
-    const repositoryPage = await context.newPage();
-    await repositoryPage.goto('https://github.com/facebook/react/pull/42', {
-      waitUntil: 'domcontentloaded',
-      timeout: 5_000,
-    });
     await configureWorkspacePreferences(serviceWorker, {
       savedFilters: {
         schemaVersion: 1,
@@ -278,12 +273,9 @@ test('applies a repository feature-flag override without hiding other controls',
           criteria: { repositories: [], authors: [], draftState: 'any' },
         }],
       },
-      repositoryPreferences: {
+      globalPreferences: {
         schemaVersion: 1,
-        value: [{
-          repositoryKey: 'facebook/react',
-          featureFlags: { savedFilters: false },
-        }],
+        value: { featureFlags: { savedFilters: false } },
       },
     });
     const popup = await openExtensionPopup(context, serviceWorker);
