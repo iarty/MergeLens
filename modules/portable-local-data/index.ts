@@ -26,3 +26,9 @@ export type {
   PortableLocalDataImportPreview,
   PreviewPortableLocalDataImportResult,
 } from './application/contracts';
+export {
+  createExportPortableLocalData,
+} from './application/exportPortableLocalData';
+export type {
+  ExportPortableLocalDataDependencies,
+} from './application/exportPortableLocalData';
