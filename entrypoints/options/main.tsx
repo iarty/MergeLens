@@ -5,6 +5,8 @@ import { QuickLinksSettings } from '@/features/settings/QuickLinksSettings';
 import { ReviewTemplatesSettings } from '@/features/settings/ReviewTemplatesSettings';
 import { WorkspacePreferencesSettings } from '@/features/settings/WorkspacePreferencesSettings';
 import { ReviewNotificationsSettings } from '@/features/settings/ReviewNotificationsSettings';
+import { PortableLocalDataSettings } from '@/features/settings/PortableLocalDataSettings';
+import { portableLocalDataServices } from './portableLocalDataServices';
 import './style.css';
 
 const rootElement = document.getElementById('root');
@@ -21,6 +23,7 @@ ReactDOM.createRoot(rootElement).render(
       <ReviewTemplatesSettings />
       <ReviewNotificationsSettings />
       <WorkspacePreferencesSettings />
+      <PortableLocalDataSettings services={portableLocalDataServices} />
     </div>
   </React.StrictMode>,
 );
