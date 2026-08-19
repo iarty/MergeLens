@@ -32,3 +32,10 @@ export {
 export type {
   ExportPortableLocalDataDependencies,
 } from './application/exportPortableLocalData';
+export {
+  createApplyPortableLocalDataImport,
+  createPreviewPortableLocalDataImport,
+} from './application/importPortableLocalData';
+export type {
+  ImportPortableLocalDataDependencies,
+} from './application/importPortableLocalData';
