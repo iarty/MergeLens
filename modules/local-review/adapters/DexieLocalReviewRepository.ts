@@ -217,6 +217,20 @@ export class DexieLocalReviewRepository implements LocalReviewRepository {
     });
   }
 
+  async listNotes(): Promise<PullRequestNote[]> {
+    logger.debug('Listing pull request notes');
+    return this.runStorageOperation('list-notes', async () => {
+      const notes = (await this.database.notes.toArray())
+        .map(toPullRequestNote)
+        .filter((note): note is PullRequestNote => note !== null)
+        .sort((left, right) => left.prKey.localeCompare(right.prKey));
+      logger.info('Listed pull request notes', {
+        noteCount: notes.length,
+      });
+      return notes;
+    });
+  }
+
   async listTemplates(): Promise<ReviewTemplate[]> {
     logger.debug('Listing review templates');
     return this.runStorageOperation('list-templates', async () => {
