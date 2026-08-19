@@ -40,6 +40,12 @@ class InMemoryLocalReviewRepository implements LocalReviewRepository {
     this.notes.delete(prKey);
   }
 
+  async listNotes(): Promise<PullRequestNote[]> {
+    return [...this.notes.values()].sort((left, right) =>
+      left.prKey.localeCompare(right.prKey),
+    );
+  }
+
   async listTemplates(): Promise<ReviewTemplate[]> {
     return sortReviewTemplates([...this.templates.values()]);
   }
@@ -108,6 +114,30 @@ describe('local review application use cases', () => {
     });
     expect(result.status === 'success' && result.data.templates.map(({ id }) => id))
       .toEqual(['a', 'z']);
+  });
+
+  it('lists notes in deterministic pull request key order', async () => {
+    repository.notes.set('zeta/repo#2', {
+      owner: 'zeta',
+      repository: 'repo',
+      pullNumber: 2,
+      prKey: 'zeta/repo#2',
+      body: 'Second',
+      updatedAt: '2026-08-14T10:00:00.000Z',
+    });
+    repository.notes.set('alpha/repo#1', {
+      owner: 'alpha',
+      repository: 'repo',
+      pullNumber: 1,
+      prKey: 'alpha/repo#1',
+      body: 'First',
+      updatedAt: '2026-08-14T10:00:00.000Z',
+    });
+
+    await expect(repository.listNotes()).resolves.toEqual([
+      expect.objectContaining({ prKey: 'alpha/repo#1' }),
+      expect.objectContaining({ prKey: 'zeta/repo#2' }),
+    ]);
   });
 
   it('saves notes with an injected timestamp and deletes blank drafts', async () => {
@@ -188,6 +218,7 @@ describe('local review application use cases', () => {
       readNote: vi.fn().mockResolvedValue(null),
       saveNote: vi.fn(),
       deleteNote: vi.fn(),
+      listNotes: vi.fn().mockResolvedValue([]),
       listTemplates: vi.fn().mockRejectedValue(
         new LocalReviewRepositoryError(
           'quota-exceeded',

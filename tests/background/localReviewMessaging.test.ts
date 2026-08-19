@@ -19,6 +19,7 @@ const createRepository = (): LocalReviewRepository => ({
   readNote: vi.fn().mockResolvedValue(null),
   saveNote: vi.fn().mockImplementation(async (note) => note),
   deleteNote: vi.fn().mockResolvedValue(undefined),
+  listNotes: vi.fn().mockResolvedValue([]),
   listTemplates: vi.fn().mockResolvedValue([]),
   upsertTemplate: vi.fn().mockImplementation(async (template) => template),
   deleteTemplate: vi.fn().mockResolvedValue(undefined),
