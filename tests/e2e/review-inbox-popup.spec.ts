@@ -114,6 +114,15 @@ test('loads the review inbox and opens extension settings', async () => {
     await expect(
       optionsPage.getByRole('heading', { name: 'GitHub access' }),
     ).toBeVisible();
+    await expect(
+      optionsPage.getByRole('heading', { name: 'Portable local data' }),
+    ).toBeVisible();
+    await expect(
+      optionsPage.getByRole('button', { name: 'Export JSON' }),
+    ).toBeVisible();
+    await expect(
+      optionsPage.getByLabel('Import JSON'),
+    ).toBeVisible();
   } finally {
     await closeExtension(context);
   }
