@@ -1,0 +1,119 @@
+{
+  "format": "mergelens-portable-local-data",
+  "schemaVersion": 1,
+  "exportedAt": "2026-08-20T10:00:00.000Z",
+  "data": {
+    "notes": [
+      {
+        "prKey": "acme/api#42",
+        "owner": "acme",
+        "repository": "api",
+        "pullNumber": 42,
+        "body": "Check the retry behavior around the timeout path before approving.",
+        "updatedAt": "2026-08-20T09:15:00.000Z"
+      },
+      {
+        "prKey": "octo/web-app#108",
+        "owner": "octo",
+        "repository": "web-app",
+        "pullNumber": 108,
+        "body": "Verify the mobile layout and add a regression test for the empty state.",
+        "updatedAt": "2026-08-19T16:30:00.000Z"
+      }
+    ],
+    "reviewTemplates": [
+      {
+        "id": "security-review",
+        "title": "Security review",
+        "body": "Check authorization, input validation, secret handling, and error responses.",
+        "createdAt": "2026-08-01T08:00:00.000Z",
+        "updatedAt": "2026-08-18T12:00:00.000Z"
+      },
+      {
+        "id": "frontend-review",
+        "title": "Frontend review",
+        "body": "Check loading, empty, error, keyboard, and responsive states.",
+        "createdAt": "2026-08-02T08:00:00.000Z",
+        "updatedAt": "2026-08-19T12:00:00.000Z"
+      }
+    ],
+    "savedFilters": [
+      {
+        "id": "team-review-queue",
+        "name": "Team review queue",
+        "view": "reviewRequests",
+        "criteria": {
+          "repositories": ["acme/api", "octo/web-app"],
+          "authors": ["octocat", "hubot"],
+          "draftState": "ready"
+        }
+      },
+      {
+        "id": "my-assigned-drafts",
+        "name": "My assigned drafts",
+        "view": "assigned",
+        "criteria": {
+          "repositories": ["acme/api"],
+          "authors": [],
+          "draftState": "draft"
+        }
+      },
+      {
+        "id": "recent-api-activity",
+        "name": "Recent API activity",
+        "view": "recentActivity",
+        "criteria": {
+          "repositories": ["acme/api"],
+          "authors": ["octocat"],
+          "draftState": "any"
+        }
+      }
+    ],
+    "globalWorkspacePreferences": {
+      "featureFlags": {
+        "savedFilters": true,
+        "customCommandPaletteShortcut": true
+      },
+      "commandPaletteShortcut": "primary-shift-k",
+      "pullRequestEstimation": {
+        "version": "heuristics-v1",
+        "weights": {
+          "changes": 1.2,
+          "files": 2,
+          "generatedFiles": 0.5,
+          "checks": 1.5
+        },
+        "thresholds": {
+          "medium": 8,
+          "high": 18,
+          "critical": 30
+        },
+        "maxChangeCount": 5000,
+        "maxFileCount": 250,
+        "generatedFilePatterns": ["*.snap", "dist/**", "coverage/**"]
+      }
+    },
+    "repositoryWorkspacePreferences": [
+      {
+        "repositoryKey": "acme/api",
+        "featureFlags": {
+          "savedFilters": true
+        },
+        "commandPaletteShortcut": "primary-k"
+      },
+      {
+        "repositoryKey": "octo/web-app",
+        "featureFlags": {
+          "customCommandPaletteShortcut": false
+        },
+        "pullRequestEstimation": {
+          "maxFileCount": 120
+        }
+      }
+    ],
+    "reviewNotificationPreferences": {
+      "enabled": true,
+      "intervalMinutes": 15
+    }
+  }
+}
