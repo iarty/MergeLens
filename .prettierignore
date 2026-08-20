@@ -1,0 +1,9 @@
+node_modules/
+.git/
+.output/
+.wxt/
+coverage/
+dist/
+fixtures/
+public/icon/*.png
+package-lock.json

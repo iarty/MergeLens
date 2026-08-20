@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod'
 import {
   MAX_PULL_REQUEST_NOTE_LENGTH,
   MAX_REVIEW_TEMPLATE_BODY_LENGTH,
@@ -10,12 +10,12 @@ import {
   sortReviewTemplates,
   type PullRequestNote,
   type ReviewTemplate,
-} from '@/modules/local-review';
+} from '@/modules/local-review'
 import {
   REVIEW_NOTIFICATION_INTERVALS,
   normalizeReviewNotificationPreferences,
   type ReviewNotificationPreferences,
-} from '@/modules/review-notifications';
+} from '@/modules/review-notifications'
 import {
   MAX_ESTIMATION_PATTERN_COUNT,
   MAX_ESTIMATION_PATTERN_LENGTH,
@@ -29,34 +29,34 @@ import {
   type GlobalWorkspacePreferences,
   type RepositoryWorkspacePreferences,
   type SavedInboxFilter,
-} from '@/modules/workspace-preferences';
-import { createLogger } from '@/shared/logging/logger';
+} from '@/modules/workspace-preferences'
+import { createLogger } from '@/shared/logging/logger'
 
-const logger = createLogger('portableLocalData.validation');
+const logger = createLogger('portableLocalData.validation')
 
-export const PORTABLE_LOCAL_DATA_FORMAT = 'mergelens-portable-local-data';
-export const PORTABLE_LOCAL_DATA_SCHEMA_VERSION = 1;
-export const MAX_PORTABLE_NOTE_COUNT = 10_000;
+export const PORTABLE_LOCAL_DATA_FORMAT = 'mergelens-portable-local-data'
+export const PORTABLE_LOCAL_DATA_SCHEMA_VERSION = 1
+export const MAX_PORTABLE_NOTE_COUNT = 10_000
 
-const MAX_IDENTIFIER_LENGTH = 128;
-const MAX_REPOSITORY_KEY_LENGTH = 201;
-const MAX_REPOSITORY_SEGMENT_LENGTH = 100;
-const MAX_GITHUB_LOGIN_LENGTH = 39;
+const MAX_IDENTIFIER_LENGTH = 128
+const MAX_REPOSITORY_KEY_LENGTH = 201
+const MAX_REPOSITORY_SEGMENT_LENGTH = 100
+const MAX_GITHUB_LOGIN_LENGTH = 39
 
 export interface PortableLocalDataPayload {
-  notes: PullRequestNote[];
-  reviewTemplates: ReviewTemplate[];
-  savedFilters: SavedInboxFilter[];
-  globalWorkspacePreferences: GlobalWorkspacePreferences;
-  repositoryWorkspacePreferences: RepositoryWorkspacePreferences[];
-  reviewNotificationPreferences: ReviewNotificationPreferences;
+  notes: PullRequestNote[]
+  reviewTemplates: ReviewTemplate[]
+  savedFilters: SavedInboxFilter[]
+  globalWorkspacePreferences: GlobalWorkspacePreferences
+  repositoryWorkspacePreferences: RepositoryWorkspacePreferences[]
+  reviewNotificationPreferences: ReviewNotificationPreferences
 }
 
 export interface PortableLocalData {
-  format: typeof PORTABLE_LOCAL_DATA_FORMAT;
-  schemaVersion: typeof PORTABLE_LOCAL_DATA_SCHEMA_VERSION;
-  exportedAt: string;
-  data: PortableLocalDataPayload;
+  format: typeof PORTABLE_LOCAL_DATA_FORMAT
+  schemaVersion: typeof PORTABLE_LOCAL_DATA_SCHEMA_VERSION
+  exportedAt: string
+  data: PortableLocalDataPayload
 }
 
 export type PortableDataConflictCategory =
@@ -65,22 +65,21 @@ export type PortableDataConflictCategory =
   | 'savedFilters'
   | 'globalWorkspacePreferences'
   | 'repositoryWorkspacePreferences'
-  | 'reviewNotificationPreferences';
+  | 'reviewNotificationPreferences'
 
 export interface PortableDataConflictKey {
-  category: PortableDataConflictCategory;
-  key: string;
+  category: PortableDataConflictCategory
+  key: string
 }
 
-export type PortableDataConflictDecision = 'use-imported' | 'keep-existing';
+export type PortableDataConflictDecision = 'use-imported' | 'keep-existing'
 
 export type PortableDataConflictDecisions = Partial<
   Record<PortableDataConflictCategory, PortableDataConflictDecision>
->;
+>
 
 export type PortableLocalDataValidationErrorCode =
-  | 'invalid-data'
-  | 'unsupported-version';
+  'invalid-data' | 'unsupported-version'
 
 export class PortableLocalDataValidationError extends Error {
   constructor(
@@ -89,8 +88,8 @@ export class PortableLocalDataValidationError extends Error {
     readonly issueCount: number,
     options?: ErrorOptions,
   ) {
-    super(message, options);
-    this.name = 'PortableLocalDataValidationError';
+    super(message, options)
+    this.name = 'PortableLocalDataValidationError'
   }
 }
 
@@ -112,7 +111,12 @@ const preferenceOverridesShape = {
         .object({
           changes: z.number().finite().positive().max(100_000).optional(),
           files: z.number().finite().positive().max(100_000).optional(),
-          generatedFiles: z.number().finite().positive().max(100_000).optional(),
+          generatedFiles: z
+            .number()
+            .finite()
+            .positive()
+            .max(100_000)
+            .optional(),
           checks: z.number().finite().positive().max(100_000).optional(),
         })
         .strict()
@@ -134,18 +138,21 @@ const preferenceOverridesShape = {
     })
     .strict()
     .optional(),
-};
+}
 
 const noteSchema = z
   .object({
-    prKey: z.string().min(1).max(MAX_REPOSITORY_KEY_LENGTH + 12),
+    prKey: z
+      .string()
+      .min(1)
+      .max(MAX_REPOSITORY_KEY_LENGTH + 12),
     owner: z.string().min(1).max(MAX_REPOSITORY_SEGMENT_LENGTH),
     repository: z.string().min(1).max(MAX_REPOSITORY_SEGMENT_LENGTH),
     pullNumber: z.number().int().positive(),
     body: z.string().min(1).max(MAX_PULL_REQUEST_NOTE_LENGTH),
     updatedAt: z.iso.datetime({ offset: true }),
   })
-  .strict();
+  .strict()
 
 const reviewTemplateSchema = z
   .object({
@@ -155,7 +162,7 @@ const reviewTemplateSchema = z
     createdAt: z.iso.datetime({ offset: true }),
     updatedAt: z.iso.datetime({ offset: true }),
   })
-  .strict();
+  .strict()
 
 const savedFilterSchema = z
   .object({
@@ -168,24 +175,29 @@ const savedFilterSchema = z
           .array(z.string().min(3).max(MAX_REPOSITORY_KEY_LENGTH))
           .max(MAX_SAVED_FILTER_CRITERION_COUNT),
         authors: z
-          .array(z.string().min(1).max(MAX_GITHUB_LOGIN_LENGTH + 1))
+          .array(
+            z
+              .string()
+              .min(1)
+              .max(MAX_GITHUB_LOGIN_LENGTH + 1),
+          )
           .max(MAX_SAVED_FILTER_CRITERION_COUNT),
         draftState: z.enum(['any', 'draft', 'ready']),
       })
       .strict(),
   })
-  .strict();
+  .strict()
 
 const globalWorkspacePreferencesSchema = z
   .object(preferenceOverridesShape)
-  .strict();
+  .strict()
 
 const repositoryWorkspacePreferencesSchema = z
   .object({
     repositoryKey: z.string().min(3).max(MAX_REPOSITORY_KEY_LENGTH),
     ...preferenceOverridesShape,
   })
-  .strict();
+  .strict()
 
 const reviewNotificationPreferencesSchema = z
   .object({
@@ -194,7 +206,7 @@ const reviewNotificationPreferencesSchema = z
       REVIEW_NOTIFICATION_INTERVALS.map((interval) => z.literal(interval)),
     ),
   })
-  .strict();
+  .strict()
 
 export const portableLocalDataSchema = z
   .object({
@@ -216,105 +228,112 @@ export const portableLocalDataSchema = z
       })
       .strict(),
   })
-  .strict();
+  .strict()
 
-const requireUnique = (
-  values: readonly string[],
-  field: string,
-): void => {
+const requireUnique = (values: readonly string[], field: string): void => {
   if (new Set(values).size !== values.length) {
     throw new PortableLocalDataValidationError(
       'invalid-data',
       `${field} must contain unique values`,
       1,
-    );
+    )
   }
-};
+}
 
-const normalizeNotes = (notes: readonly PullRequestNote[]): PullRequestNote[] => {
+const normalizeNotes = (
+  notes: readonly PullRequestNote[],
+): PullRequestNote[] => {
   const normalized = notes.map((note) => {
-    const identity = createPullRequestKey(note);
+    const identity = createPullRequestKey(note)
     if (identity.prKey !== note.prKey) {
       throw new PortableLocalDataValidationError(
         'invalid-data',
         'notes contains a non-canonical pull request key',
         1,
-      );
+      )
     }
 
-    const body = normalizePullRequestNoteBody(note.body);
+    const body = normalizePullRequestNoteBody(note.body)
     if (body.length === 0) {
       throw new PortableLocalDataValidationError(
         'invalid-data',
         'notes cannot contain blank bodies',
         1,
-      );
+      )
     }
 
-    return { ...identity, body, updatedAt: note.updatedAt };
-  });
-  requireUnique(normalized.map(({ prKey }) => prKey), 'notes.prKey');
-  return normalized.sort((left, right) => left.prKey.localeCompare(right.prKey));
-};
+    return { ...identity, body, updatedAt: note.updatedAt }
+  })
+  requireUnique(
+    normalized.map(({ prKey }) => prKey),
+    'notes.prKey',
+  )
+  return normalized.sort((left, right) => left.prKey.localeCompare(right.prKey))
+}
 
 const normalizeTemplates = (
   templates: readonly ReviewTemplate[],
 ): ReviewTemplate[] => {
   const normalized = templates.map((template) => {
-    const draft = normalizeReviewTemplateDraft(template);
+    const draft = normalizeReviewTemplateDraft(template)
     return {
       id: draft.id ?? template.id,
       title: draft.title,
       body: draft.body,
       createdAt: template.createdAt,
       updatedAt: template.updatedAt,
-    };
-  });
-  requireUnique(normalized.map(({ id }) => id), 'reviewTemplates.id');
-  return sortReviewTemplates(normalized);
-};
+    }
+  })
+  requireUnique(
+    normalized.map(({ id }) => id),
+    'reviewTemplates.id',
+  )
+  return sortReviewTemplates(normalized)
+}
 
 const normalizeRepositoryPreferences = (
   preferences: readonly RepositoryWorkspacePreferences[],
 ): RepositoryWorkspacePreferences[] => {
-  const normalized = preferences.map(normalizeRepositoryWorkspacePreferences);
+  const normalized = preferences.map(normalizeRepositoryWorkspacePreferences)
   requireUnique(
     normalized.map(({ repositoryKey }) => repositoryKey),
     'repositoryWorkspacePreferences.repositoryKey',
-  );
+  )
   return normalized.sort((left, right) =>
     left.repositoryKey.localeCompare(right.repositoryKey),
-  );
-};
+  )
+}
 
 const readSchemaVersion = (input: unknown): unknown => {
-  if (typeof input !== 'object' || input === null) return undefined;
-  return (input as { schemaVersion?: unknown }).schemaVersion;
-};
+  if (typeof input !== 'object' || input === null) return undefined
+  return (input as { schemaVersion?: unknown }).schemaVersion
+}
 
-const toValidationError = (error: unknown): PortableLocalDataValidationError => {
-  if (error instanceof PortableLocalDataValidationError) return error;
+const toValidationError = (
+  error: unknown,
+): PortableLocalDataValidationError => {
+  if (error instanceof PortableLocalDataValidationError) return error
   if (error instanceof z.ZodError) {
     return new PortableLocalDataValidationError(
       'invalid-data',
       'Portable local data failed schema validation',
       error.issues.length,
       { cause: error },
-    );
+    )
   }
   return new PortableLocalDataValidationError(
     'invalid-data',
     'Portable local data failed domain validation',
     1,
     { cause: error },
-  );
-};
+  )
+}
 
 export const parsePortableLocalData = (input: unknown): PortableLocalData => {
-  const schemaVersion = readSchemaVersion(input);
+  const schemaVersion = readSchemaVersion(input)
   logger.debug('Validating portable local data', {
     schemaVersion: typeof schemaVersion === 'number' ? schemaVersion : null,
-  });
+  })
 
   if (
     typeof schemaVersion === 'number' &&
@@ -323,16 +342,16 @@ export const parsePortableLocalData = (input: unknown): PortableLocalData => {
     logger.warn('Rejected unsupported portable local data version', {
       schemaVersion,
       supportedVersion: PORTABLE_LOCAL_DATA_SCHEMA_VERSION,
-    });
+    })
     throw new PortableLocalDataValidationError(
       'unsupported-version',
       `Portable local data schema version ${schemaVersion} is not supported`,
       1,
-    );
+    )
   }
 
   try {
-    const parsed = portableLocalDataSchema.parse(input);
+    const parsed = portableLocalDataSchema.parse(input)
     const normalized: PortableLocalData = {
       ...parsed,
       data: {
@@ -349,7 +368,7 @@ export const parsePortableLocalData = (input: unknown): PortableLocalData => {
           parsed.data.reviewNotificationPreferences,
         ),
       },
-    };
+    }
     logger.debug('Portable local data validation completed', {
       schemaVersion: normalized.schemaVersion,
       noteCount: normalized.data.notes.length,
@@ -357,38 +376,42 @@ export const parsePortableLocalData = (input: unknown): PortableLocalData => {
       savedFilterCount: normalized.data.savedFilters.length,
       repositoryPreferenceCount:
         normalized.data.repositoryWorkspacePreferences.length,
-    });
-    return normalized;
+    })
+    return normalized
   } catch (error) {
-    const validationError = toValidationError(error);
+    const validationError = toValidationError(error)
     logger.warn('Rejected invalid portable local data', {
       code: validationError.code,
       issueCount: validationError.issueCount,
       errorName: error instanceof Error ? error.name : 'UnknownError',
-    });
-    throw validationError;
+    })
+    throw validationError
   }
-};
+}
 
 export const getPortableDataConflictKey = (
   category: PortableDataConflictCategory,
-  record: PullRequestNote | ReviewTemplate | SavedInboxFilter |
-    RepositoryWorkspacePreferences | GlobalWorkspacePreferences |
-    ReviewNotificationPreferences,
+  record:
+    | PullRequestNote
+    | ReviewTemplate
+    | SavedInboxFilter
+    | RepositoryWorkspacePreferences
+    | GlobalWorkspacePreferences
+    | ReviewNotificationPreferences,
 ): PortableDataConflictKey => {
   switch (category) {
     case 'notes':
-      return { category, key: (record as PullRequestNote).prKey };
+      return { category, key: (record as PullRequestNote).prKey }
     case 'reviewTemplates':
     case 'savedFilters':
-      return { category, key: (record as ReviewTemplate | SavedInboxFilter).id };
+      return { category, key: (record as ReviewTemplate | SavedInboxFilter).id }
     case 'repositoryWorkspacePreferences':
       return {
         category,
         key: (record as RepositoryWorkspacePreferences).repositoryKey,
-      };
+      }
     case 'globalWorkspacePreferences':
     case 'reviewNotificationPreferences':
-      return { category, key: 'singleton' };
+      return { category, key: 'singleton' }
   }
-};
+}

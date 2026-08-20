@@ -1,5 +1,5 @@
-import type { ReviewNotificationSourceResult } from '../domain/ReviewNotification';
+import type { ReviewNotificationSourceResult } from '../domain/ReviewNotification'
 
 export interface ReviewNotificationSource {
-  listReviewRequests(): Promise<ReviewNotificationSourceResult>;
+  listReviewRequests(): Promise<ReviewNotificationSourceResult>
 }

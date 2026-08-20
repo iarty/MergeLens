@@ -1,6 +1,6 @@
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'silent';
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'silent'
 
-type LogMetadata = Record<string, unknown>;
+type LogMetadata = Record<string, unknown>
 
 const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
   debug: 10,
@@ -8,33 +8,34 @@ const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
   warn: 30,
   error: 40,
   silent: 50,
-};
+}
 
 const resolveLogLevel = (): LogLevel => {
   const nodeLogLevel = (
     globalThis as typeof globalThis & {
-      process?: { env?: Record<string, string | undefined> };
+      process?: { env?: Record<string, string | undefined> }
     }
-  ).process?.env?.LOG_LEVEL;
-  const configuredLevel = nodeLogLevel ?? import.meta.env.WXT_MERGELENS_LOG_LEVEL;
-  const normalizedLevel = configuredLevel?.toLowerCase() as LogLevel | undefined;
+  ).process?.env?.LOG_LEVEL
+  const configuredLevel =
+    nodeLogLevel ?? import.meta.env.WXT_MERGELENS_LOG_LEVEL
+  const normalizedLevel = configuredLevel?.toLowerCase() as LogLevel | undefined
 
   if (normalizedLevel && normalizedLevel in LOG_LEVEL_PRIORITY) {
-    return normalizedLevel;
+    return normalizedLevel
   }
 
   if (import.meta.env.MODE === 'test') {
-    return 'silent';
+    return 'silent'
   }
 
-  return import.meta.env.DEV ? 'debug' : 'warn';
-};
+  return import.meta.env.DEV ? 'debug' : 'warn'
+}
 
-const activeLogLevel = resolveLogLevel();
+const activeLogLevel = resolveLogLevel()
 
 const shouldLog = (level: Exclude<LogLevel, 'silent'>): boolean => {
-  return LOG_LEVEL_PRIORITY[level] >= LOG_LEVEL_PRIORITY[activeLogLevel];
-};
+  return LOG_LEVEL_PRIORITY[level] >= LOG_LEVEL_PRIORITY[activeLogLevel]
+}
 
 const writeLog = (
   level: Exclude<LogLevel, 'silent'>,
@@ -43,12 +44,12 @@ const writeLog = (
   metadata?: LogMetadata,
 ): void => {
   if (!shouldLog(level)) {
-    return;
+    return
   }
 
-  const payload = metadata ? [message, metadata] : [message];
-  console[level](`[${scope}]`, ...payload);
-};
+  const payload = metadata ? [message, metadata] : [message]
+  console[level](`[${scope}]`, ...payload)
+}
 
 export const createLogger = (scope: string) => {
   return {
@@ -60,5 +61,5 @@ export const createLogger = (scope: string) => {
       writeLog('warn', scope, message, metadata),
     error: (message: string, metadata?: LogMetadata) =>
       writeLog('error', scope, message, metadata),
-  };
-};
+  }
+}

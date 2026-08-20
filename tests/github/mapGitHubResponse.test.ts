@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest'
 import {
   getPullRequestHeadSha,
   mapGitHubResponse,
-} from '@/modules/pull-requests/adapters/mapGitHubResponse';
+} from '@/modules/pull-requests/adapters/mapGitHubResponse'
 
 const pullRequestResponse = {
   html_url: 'https://github.com/openai/codex/pull/42',
@@ -12,7 +12,7 @@ const pullRequestResponse = {
   draft: null,
   user: { login: 'octocat' },
   head: { sha: 'abc123' },
-};
+}
 
 describe('mapGitHubResponse', () => {
   it('maps a pull request and check runs into normalized toolbar data', () => {
@@ -38,7 +38,7 @@ describe('mapGitHubResponse', () => {
       },
       'openai',
       'codex',
-    );
+    )
 
     expect(result).toEqual({
       pullRequest: {
@@ -63,16 +63,20 @@ describe('mapGitHubResponse', () => {
         },
       ],
       actionsUrl: 'https://github.com/openai/codex/actions',
-    });
-    expect(getPullRequestHeadSha(pullRequestResponse)).toBe('abc123');
-  });
+    })
+    expect(getPullRequestHeadSha(pullRequestResponse)).toBe('abc123')
+  })
 
   it('supports an empty checks response', () => {
     expect(
-      mapGitHubResponse(pullRequestResponse, { check_runs: [] }, 'openai', 'codex')
-        .checks,
-    ).toEqual([]);
-  });
+      mapGitHubResponse(
+        pullRequestResponse,
+        { check_runs: [] },
+        'openai',
+        'codex',
+      ).checks,
+    ).toEqual([])
+  })
 
   it.each(['waiting', 'requested'] as const)(
     'maps the GitHub %s state to queued',
@@ -92,11 +96,11 @@ describe('mapGitHubResponse', () => {
         },
         'openai',
         'codex',
-      );
+      )
 
-      expect(result.checks[0]?.status).toBe('queued');
+      expect(result.checks[0]?.status).toBe('queued')
     },
-  );
+  )
 
   it('rejects malformed GitHub payloads', () => {
     expect(() =>
@@ -106,6 +110,6 @@ describe('mapGitHubResponse', () => {
         'openai',
         'codex',
       ),
-    ).toThrow();
-  });
-});
+    ).toThrow()
+  })
+})

@@ -1,5 +1,5 @@
-import { fileURLToPath } from 'node:url';
-import { configDefaults, defineConfig } from 'vitest/config';
+import { fileURLToPath } from 'node:url'
+import { configDefaults, defineConfig } from 'vitest/config'
 
 export default defineConfig({
   resolve: {
@@ -19,4 +19,4 @@ export default defineConfig({
     clearMocks: true,
     restoreMocks: true,
   },
-});
+})

@@ -1,8 +1,8 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
-import type { LocalReviewController } from '@/features/local-review/types';
-import { PRToolbar } from '@/features/pr-toolbar/PRToolbar';
-import type { ToolbarData } from '@/shared/messaging/schemas';
+import { fireEvent, render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
+import type { LocalReviewController } from '@/features/local-review/types'
+import { PRToolbar } from '@/features/pr-toolbar/PRToolbar'
+import type { ToolbarData } from '@/shared/messaging/schemas'
 
 const toolbarData: ToolbarData = {
   pullRequest: {
@@ -27,7 +27,7 @@ const toolbarData: ToolbarData = {
     },
   ],
   actionsUrl: 'https://github.com/facebook/react/actions',
-};
+}
 
 const createLocalReviewController = (): LocalReviewController => {
   const state = {
@@ -48,7 +48,7 @@ const createLocalReviewController = (): LocalReviewController => {
     saveError: null,
     clipboardError: null,
     validationMessage: null,
-  };
+  }
 
   return {
     getState: () => state,
@@ -60,22 +60,22 @@ const createLocalReviewController = (): LocalReviewController => {
     copyDraft: vi.fn().mockResolvedValue(undefined),
     flush: vi.fn().mockResolvedValue(undefined),
     dispose: vi.fn().mockResolvedValue(undefined),
-  };
-};
+  }
+}
 
 describe('PRToolbar', () => {
   it('keeps the Notes action available across PR data states', () => {
-    const controller = createLocalReviewController();
-    const onToggleLocalReview = vi.fn();
+    const controller = createLocalReviewController()
+    const onToggleLocalReview = vi.fn()
     const { rerender } = render(
       <PRToolbar
         state={{ status: 'loading' }}
         localReviewController={controller}
         onToggleLocalReview={onToggleLocalReview}
       />,
-    );
+    )
 
-    expect(screen.getByRole('button', { name: 'Notes' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Notes' })).toBeVisible()
 
     rerender(
       <PRToolbar
@@ -86,8 +86,8 @@ describe('PRToolbar', () => {
         localReviewController={controller}
         onToggleLocalReview={onToggleLocalReview}
       />,
-    );
-    expect(screen.getByRole('button', { name: 'Notes' })).toBeVisible();
+    )
+    expect(screen.getByRole('button', { name: 'Notes' })).toBeVisible()
 
     rerender(
       <PRToolbar
@@ -95,10 +95,10 @@ describe('PRToolbar', () => {
         localReviewController={controller}
         onToggleLocalReview={onToggleLocalReview}
       />,
-    );
-    fireEvent.click(screen.getByRole('button', { name: 'Notes' }));
-    expect(onToggleLocalReview).toHaveBeenCalledOnce();
-  });
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Notes' }))
+    expect(onToggleLocalReview).toHaveBeenCalledOnce()
+  })
 
   it('renders the local review panel inside the toolbar when opened', () => {
     render(
@@ -108,38 +108,38 @@ describe('PRToolbar', () => {
         isLocalReviewOpen
         onToggleLocalReview={vi.fn()}
       />,
-    );
+    )
 
     expect(screen.getByRole('button', { name: 'Notes' })).toHaveAttribute(
       'aria-expanded',
       'true',
-    );
+    )
     expect(
       screen.getByRole('region', { name: 'Local review workspace' }),
-    ).toBeVisible();
-  });
+    ).toBeVisible()
+  })
 
   it('renders an accessible loading state', () => {
-    render(<PRToolbar state={{ status: 'loading' }} />);
+    render(<PRToolbar state={{ status: 'loading' }} />)
 
-    expect(screen.getByRole('status')).toHaveTextContent('Loading pull request');
-  });
+    expect(screen.getByRole('status')).toHaveTextContent('Loading pull request')
+  })
 
   it('renders normalized PR data and safe external links', () => {
-    render(<PRToolbar state={{ status: 'success', data: toolbarData }} />);
+    render(<PRToolbar state={{ status: 'success', data: toolbarData }} />)
 
     const pullRequestLink = screen.getByRole('link', {
       name: 'Add resilient PR toolbar',
-    });
-    const checkLink = screen.getByRole('link', { name: /Unit tests/ });
-    const actionsLink = screen.getByRole('link', { name: 'Actions' });
+    })
+    const checkLink = screen.getByRole('link', { name: /Unit tests/ })
+    const actionsLink = screen.getByRole('link', { name: 'Actions' })
 
-    expect(pullRequestLink).toHaveAttribute('href', toolbarData.pullRequest.url);
-    expect(checkLink).toHaveAttribute('href', toolbarData.checks[0]?.detailsUrl);
-    expect(actionsLink).toHaveAttribute('href', toolbarData.actionsUrl);
-    expect(pullRequestLink).toHaveAttribute('rel', 'noreferrer');
-    expect(screen.getByText('Browser tests').closest('a')).toBeNull();
-  });
+    expect(pullRequestLink).toHaveAttribute('href', toolbarData.pullRequest.url)
+    expect(checkLink).toHaveAttribute('href', toolbarData.checks[0]?.detailsUrl)
+    expect(actionsLink).toHaveAttribute('href', toolbarData.actionsUrl)
+    expect(pullRequestLink).toHaveAttribute('rel', 'noreferrer')
+    expect(screen.getByText('Browser tests').closest('a')).toBeNull()
+  })
 
   it('renders configured links and deployment states with safe links', () => {
     render(
@@ -150,20 +150,39 @@ describe('PRToolbar', () => {
           data: {
             ...toolbarData,
             quickLinks: {
-              configuredLinks: [{ id: 'docs', label: 'Project docs', url: 'https://docs.example.com/' }],
-              deployments: [{ id: '7', environment: 'Preview', state: 'success', url: 'https://preview.example.com/', updatedAt: '2026-08-14T01:00:00Z' }],
+              configuredLinks: [
+                {
+                  id: 'docs',
+                  label: 'Project docs',
+                  url: 'https://docs.example.com/',
+                },
+              ],
+              deployments: [
+                {
+                  id: '7',
+                  environment: 'Preview',
+                  state: 'success',
+                  url: 'https://preview.example.com/',
+                  updatedAt: '2026-08-14T01:00:00Z',
+                },
+              ],
             },
           },
         }}
       />,
-    );
+    )
 
-    expect(screen.getByRole('link', { name: 'Project docs' })).toHaveAttribute('rel', 'noreferrer');
-    expect(screen.getByRole('link', { name: 'Preview: success' })).toHaveAttribute('href', 'https://preview.example.com/');
-  });
+    expect(screen.getByRole('link', { name: 'Project docs' })).toHaveAttribute(
+      'rel',
+      'noreferrer',
+    )
+    expect(
+      screen.getByRole('link', { name: 'Preview: success' }),
+    ).toHaveAttribute('href', 'https://preview.example.com/')
+  })
 
   it('preserves toolbar content and offers retry while deployments are unavailable', () => {
-    const onRetry = vi.fn();
+    const onRetry = vi.fn()
     render(
       <PRToolbar
         state={{
@@ -174,26 +193,28 @@ describe('PRToolbar', () => {
         }}
         onRetry={onRetry}
       />,
-    );
-    expect(screen.getByRole('link', { name: 'Actions' })).toBeVisible();
-    expect(screen.getByRole('status')).toHaveTextContent('Deployments rate limited');
-    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
-    expect(onRetry).toHaveBeenCalledOnce();
-  });
+    )
+    expect(screen.getByRole('link', { name: 'Actions' })).toBeVisible()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Deployments rate limited',
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    expect(onRetry).toHaveBeenCalledOnce()
+  })
 
   it('renders the empty checks state without treating the PR as an error', () => {
     render(
       <PRToolbar
         state={{ status: 'success', data: { ...toolbarData, checks: [] } }}
       />,
-    );
+    )
 
-    expect(screen.getByText('No checks reported')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Actions' })).toBeInTheDocument();
-  });
+    expect(screen.getByText('No checks reported')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Actions' })).toBeInTheDocument()
+  })
 
   it('opens settings for a missing token without displaying credentials', () => {
-    const onOpenSettings = vi.fn();
+    const onOpenSettings = vi.fn()
     render(
       <PRToolbar
         state={{
@@ -205,16 +226,16 @@ describe('PRToolbar', () => {
         }}
         onOpenSettings={onOpenSettings}
       />,
-    );
+    )
 
-    fireEvent.click(screen.getByRole('button', { name: 'Open settings' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open settings' }))
 
-    expect(onOpenSettings).toHaveBeenCalledOnce();
-    expect(screen.queryByText(/github_pat_/i)).not.toBeInTheDocument();
-  });
+    expect(onOpenSettings).toHaveBeenCalledOnce()
+    expect(screen.queryByText(/github_pat_/i)).not.toBeInTheDocument()
+  })
 
   it('renders retryable API errors and invokes retry', () => {
-    const onRetry = vi.fn();
+    const onRetry = vi.fn()
     render(
       <PRToolbar
         state={{
@@ -227,20 +248,22 @@ describe('PRToolbar', () => {
         }}
         onRetry={onRetry}
       />,
-    );
+    )
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Retry available in about 30 seconds');
-    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
-    expect(onRetry).toHaveBeenCalledOnce();
-  });
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Retry available in about 30 seconds',
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    expect(onRetry).toHaveBeenCalledOnce()
+  })
 
   it('renders unsupported context without actions', () => {
-    render(<PRToolbar state={{ status: 'unsupported-context' }} />);
+    render(<PRToolbar state={{ status: 'unsupported-context' }} />)
 
     expect(screen.getByRole('status')).toHaveTextContent(
       'Pull request context unavailable',
-    );
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
-    expect(screen.queryByRole('link')).not.toBeInTheDocument();
-  });
-});
+    )
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+  })
+})

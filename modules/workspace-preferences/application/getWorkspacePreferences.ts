@@ -1,47 +1,48 @@
-import { createLogger } from '@/shared/logging/logger';
-import type { WorkspacePreferencesRepository } from '../ports/WorkspacePreferencesRepository';
+import { createLogger } from '@/shared/logging/logger'
+import type { WorkspacePreferencesRepository } from '../ports/WorkspacePreferencesRepository'
 import type {
   WorkspacePreferencesResult,
   WorkspacePreferencesState,
-} from './contracts';
+} from './contracts'
 import {
   getWorkspacePreferencesErrorName,
   isExpectedWorkspacePreferencesError,
   toWorkspacePreferencesError,
-} from './operation';
+} from './operation'
 
-const logger = createLogger('workspacePreferences.getWorkspacePreferences');
+const logger = createLogger('workspacePreferences.getWorkspacePreferences')
 
 export const createGetWorkspacePreferences =
   (repository: WorkspacePreferencesRepository) =>
   async (): Promise<WorkspacePreferencesResult<WorkspacePreferencesState>> => {
-    logger.debug('Loading workspace preferences state');
+    logger.debug('Loading workspace preferences state')
     try {
       const [savedFilters, globalPreferences, repositoryPreferences] =
         await Promise.all([
           repository.listSavedFilters(),
           repository.getGlobalPreferences(),
           repository.listRepositoryPreferences(),
-        ]);
+        ])
       logger.debug('Loaded workspace preferences state', {
         filterCount: savedFilters.length,
         repositoryCount: repositoryPreferences.length,
-        featureFlagCount: Object.keys(globalPreferences.featureFlags ?? {}).length,
+        featureFlagCount: Object.keys(globalPreferences.featureFlags ?? {})
+          .length,
         hasShortcut: globalPreferences.commandPaletteShortcut !== undefined,
-      });
+      })
       return {
         status: 'success',
         data: { savedFilters, globalPreferences, repositoryPreferences },
-      };
+      }
     } catch (error) {
-      const mappedError = toWorkspacePreferencesError(error);
+      const mappedError = toWorkspacePreferencesError(error)
       const log = isExpectedWorkspacePreferencesError(error)
         ? logger.warn
-        : logger.error;
+        : logger.error
       log('Failed to load workspace preferences state', {
         code: mappedError.code,
         errorName: getWorkspacePreferencesErrorName(error),
-      });
-      return { status: 'error', error: mappedError };
+      })
+      return { status: 'error', error: mappedError }
     }
-  };
+  }

@@ -2,4 +2,4 @@ export {
   readConfiguredQuickLinks,
   removeConfiguredQuickLink,
   saveConfiguredQuickLink,
-} from './adapters/configuredQuickLinksStorage';
+} from './adapters/configuredQuickLinksStorage'

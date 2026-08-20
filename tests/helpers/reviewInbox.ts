@@ -1,7 +1,7 @@
 import type {
   ReviewInboxData,
   ReviewInboxPullRequest,
-} from '@/modules/pull-requests';
+} from '@/modules/pull-requests'
 
 export const createReviewInboxItem = (
   overrides: Partial<ReviewInboxPullRequest> = {},
@@ -21,7 +21,7 @@ export const createReviewInboxItem = (
   updatedAt: '2026-08-13T02:00:00Z',
   reasons: ['review-requested', 'assigned'],
   ...overrides,
-});
+})
 
 export const createReviewInboxData = (
   item: ReviewInboxPullRequest = createReviewInboxItem(),
@@ -40,4 +40,4 @@ export const createReviewInboxData = (
       }),
     ],
   },
-});
+})

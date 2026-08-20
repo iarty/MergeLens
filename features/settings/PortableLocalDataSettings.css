@@ -73,7 +73,9 @@
 }
 
 .portable-local-data-settings button:hover:not(:disabled),
-.portable-local-data-settings__file-button:hover:not(.portable-local-data-settings__file-button--disabled) {
+.portable-local-data-settings__file-button:hover:not(
+    .portable-local-data-settings__file-button--disabled
+  ) {
   background: #eef1f4;
 }
 
@@ -210,8 +212,8 @@
   padding-top: 14px;
 }
 
-.portable-local-data-settings input[type="radio"],
-.portable-local-data-settings input[type="checkbox"] {
+.portable-local-data-settings input[type='radio'],
+.portable-local-data-settings input[type='checkbox'] {
   width: 16px;
   height: 16px;
   flex: 0 0 auto;
@@ -224,7 +226,8 @@
   color: #fff;
 }
 
-.portable-local-data-settings .portable-local-data-settings__primary:hover:not(:disabled) {
+.portable-local-data-settings
+  .portable-local-data-settings__primary:hover:not(:disabled) {
   background: #1a7f37;
 }
 

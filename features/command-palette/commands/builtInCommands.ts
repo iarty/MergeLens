@@ -1,6 +1,6 @@
-import type { Command } from '../types';
-import { hasPullRequestContext } from './context';
-import { navigationCommands } from './navigationCommands';
+import type { Command } from '../types'
+import { hasPullRequestContext } from './context'
+import { navigationCommands } from './navigationCommands'
 
 export const builtInCommands: readonly Command[] = [
   ...navigationCommands,
@@ -10,8 +10,8 @@ export const builtInCommands: readonly Command[] = [
     keywords: ['notes', 'private', 'templates', 'review'],
     isAvailable: hasPullRequestContext,
     execute: async (_context, dependencies) => {
-      await dependencies.openLocalReviewWorkspace();
-      return { status: 'success', commandId: 'open-local-review-workspace' };
+      await dependencies.openLocalReviewWorkspace()
+      return { status: 'success', commandId: 'open-local-review-workspace' }
     },
   },
   {
@@ -20,8 +20,8 @@ export const builtInCommands: readonly Command[] = [
     keywords: ['options', 'configuration', 'token'],
     isAvailable: () => true,
     execute: async (_context, dependencies) => {
-      await dependencies.openSettings();
-      return { status: 'success', commandId: 'open-settings' };
+      await dependencies.openSettings()
+      return { status: 'success', commandId: 'open-settings' }
     },
   },
   {
@@ -30,8 +30,8 @@ export const builtInCommands: readonly Command[] = [
     keywords: ['reload', 'update', 'checks', 'status'],
     isAvailable: hasPullRequestContext,
     execute: async (_context, dependencies) => {
-      await dependencies.refreshPullRequestToolbar();
-      return { status: 'success', commandId: 'refresh-pull-request-toolbar' };
+      await dependencies.refreshPullRequestToolbar()
+      return { status: 'success', commandId: 'refresh-pull-request-toolbar' }
     },
   },
-];
+]

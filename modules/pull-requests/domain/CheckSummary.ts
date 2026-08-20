@@ -8,11 +8,11 @@ export type CheckStatus =
   | 'skipped'
   | 'timed-out'
   | 'action-required'
-  | 'unknown';
+  | 'unknown'
 
 export interface CheckSummary {
-  id: string;
-  name: string;
-  status: CheckStatus;
-  detailsUrl: string | null;
+  id: string
+  name: string
+  status: CheckStatus
+  detailsUrl: string | null
 }

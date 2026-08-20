@@ -1,13 +1,13 @@
-import '@testing-library/jest-dom/vitest';
-import { cleanup } from '@testing-library/react';
-import { afterEach } from 'vitest';
+import '@testing-library/jest-dom/vitest'
+import { cleanup } from '@testing-library/react'
+import { afterEach } from 'vitest'
 
-const isDebugLoggingEnabled = process.env.LOG_LEVEL?.toLowerCase() === 'debug';
+const isDebugLoggingEnabled = process.env.LOG_LEVEL?.toLowerCase() === 'debug'
 
 afterEach(() => {
-  cleanup();
+  cleanup()
 
   if (isDebugLoggingEnabled) {
-    console.debug('[tests.setup] Test DOM cleaned up');
+    console.debug('[tests.setup] Test DOM cleaned up')
   }
-});
+})

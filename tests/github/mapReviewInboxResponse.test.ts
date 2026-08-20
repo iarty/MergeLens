@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { mapReviewInboxSearchItem } from '@/modules/pull-requests/adapters/mapReviewInboxResponse';
+import { describe, expect, it } from 'vitest'
+import { mapReviewInboxSearchItem } from '@/modules/pull-requests/adapters/mapReviewInboxResponse'
 
 const searchItem = {
   id: 42,
@@ -10,8 +10,10 @@ const searchItem = {
   user: { login: 'react-contributor' },
   draft: true,
   updated_at: '2026-08-13T02:00:00Z',
-  pull_request: { url: 'https://api.github.com/repos/facebook/react/pulls/123' },
-};
+  pull_request: {
+    url: 'https://api.github.com/repos/facebook/react/pulls/123',
+  },
+}
 
 describe('mapReviewInboxSearchItem', () => {
   it('normalizes a public GitHub search result', () => {
@@ -30,8 +32,8 @@ describe('mapReviewInboxSearchItem', () => {
       isDraft: true,
       updatedAt: '2026-08-13T02:00:00Z',
       reasons: ['review-requested'],
-    });
-  });
+    })
+  })
 
   it('rejects malformed repository URLs and non-PR results', () => {
     expect(() =>
@@ -39,12 +41,12 @@ describe('mapReviewInboxSearchItem', () => {
         { ...searchItem, repository_url: 'https://example.com/facebook/react' },
         'assigned',
       ),
-    ).toThrow();
+    ).toThrow()
     expect(() =>
       mapReviewInboxSearchItem(
         { ...searchItem, pull_request: undefined },
         'assigned',
       ),
-    ).toThrow();
-  });
-});
+    ).toThrow()
+  })
+})

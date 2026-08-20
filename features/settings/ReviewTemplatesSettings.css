@@ -128,7 +128,8 @@
   color: #ffffff;
 }
 
-.review-templates-settings .review-templates-settings__primary:hover:not(:disabled) {
+.review-templates-settings
+  .review-templates-settings__primary:hover:not(:disabled) {
   background: #1a7f37;
 }
 

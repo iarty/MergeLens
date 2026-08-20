@@ -5,53 +5,48 @@ import type {
   PullRequestNote,
   ReviewTemplate,
   ReviewTemplateDraft,
-} from '../domain/LocalReview';
+} from '../domain/LocalReview'
 
 export interface CorrelatedLocalReviewRequest {
-  correlationId: string;
+  correlationId: string
 }
 
-export interface GetLocalReviewWorkspaceRequest
-  extends CorrelatedLocalReviewRequest {
-  context: PullRequestIdentity;
+export interface GetLocalReviewWorkspaceRequest extends CorrelatedLocalReviewRequest {
+  context: PullRequestIdentity
 }
 
-export interface SavePullRequestNoteRequest
-  extends CorrelatedLocalReviewRequest {
-  context: PullRequestIdentity;
-  body: string;
+export interface SavePullRequestNoteRequest extends CorrelatedLocalReviewRequest {
+  context: PullRequestIdentity
+  body: string
 }
 
-export interface ListReviewTemplatesRequest
-  extends CorrelatedLocalReviewRequest {}
+export interface ListReviewTemplatesRequest extends CorrelatedLocalReviewRequest {}
 
-export interface UpsertReviewTemplateRequest
-  extends CorrelatedLocalReviewRequest {
-  template: ReviewTemplateDraft;
+export interface UpsertReviewTemplateRequest extends CorrelatedLocalReviewRequest {
+  template: ReviewTemplateDraft
 }
 
-export interface DeleteReviewTemplateRequest
-  extends CorrelatedLocalReviewRequest {
-  templateId: string;
+export interface DeleteReviewTemplateRequest extends CorrelatedLocalReviewRequest {
+  templateId: string
 }
 
 export type GetLocalReviewWorkspaceResult =
-  LocalReviewResult<LocalReviewWorkspace>;
+  LocalReviewResult<LocalReviewWorkspace>
 export type SavePullRequestNoteResult = LocalReviewResult<{
-  note: PullRequestNote | null;
-}>;
+  note: PullRequestNote | null
+}>
 export type ListReviewTemplatesResult = LocalReviewResult<{
-  templates: ReviewTemplate[];
-}>;
+  templates: ReviewTemplate[]
+}>
 export type UpsertReviewTemplateResult = LocalReviewResult<{
-  template: ReviewTemplate;
-  templates: ReviewTemplate[];
-}>;
+  template: ReviewTemplate
+  templates: ReviewTemplate[]
+}>
 export type DeleteReviewTemplateResult = LocalReviewResult<{
-  templates: ReviewTemplate[];
-}>;
+  templates: ReviewTemplate[]
+}>
 
 export interface LocalReviewUseCaseDependencies {
-  now?: () => Date;
-  createId?: () => string;
+  now?: () => Date
+  createId?: () => string
 }

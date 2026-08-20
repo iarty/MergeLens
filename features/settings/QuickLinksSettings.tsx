@@ -1,94 +1,102 @@
-import { ExternalLink, Pencil, Plus, Trash2 } from 'lucide-react';
-import { useEffect, useState, type FormEvent } from 'react';
+import { ExternalLink, Pencil, Plus, Trash2 } from 'lucide-react'
+import { useEffect, useState, type FormEvent } from 'react'
 import {
   readConfiguredQuickLinks,
   removeConfiguredQuickLink,
   saveConfiguredQuickLink,
-} from '@/modules/quick-links/settings';
-import type { ConfiguredQuickLink } from '@/modules/quick-links';
-import { createLogger } from '@/shared/logging/logger';
+} from '@/modules/quick-links/settings'
+import type { ConfiguredQuickLink } from '@/modules/quick-links'
+import { createLogger } from '@/shared/logging/logger'
 
-const logger = createLogger('settings.quickLinks');
+const logger = createLogger('settings.quickLinks')
 
 export const QuickLinksSettings = () => {
-  const [links, setLinks] = useState<ConfiguredQuickLink[]>([]);
-  const [label, setLabel] = useState('');
-  const [url, setUrl] = useState('');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isBusy, setIsBusy] = useState(true);
+  const [links, setLinks] = useState<ConfiguredQuickLink[]>([])
+  const [label, setLabel] = useState('')
+  const [url, setUrl] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [isBusy, setIsBusy] = useState(true)
 
   useEffect(() => {
-    let active = true;
+    let active = true
     void readConfiguredQuickLinks()
       .then((items) => {
-        logger.debug('[FIX:quick-links-settings-layout] Loaded settings content', {
-          linkCount: items.length,
-        });
+        logger.debug(
+          '[FIX:quick-links-settings-layout] Loaded settings content',
+          {
+            linkCount: items.length,
+          },
+        )
         if (active) {
-          setLinks(items);
+          setLinks(items)
         }
       })
       .catch((loadError: unknown) => {
         logger.error('Failed to load configured quick links', {
-          errorName: loadError instanceof Error ? loadError.name : 'UnknownError',
-        });
-        if (active) setError('Quick links are unavailable.');
+          errorName:
+            loadError instanceof Error ? loadError.name : 'UnknownError',
+        })
+        if (active) setError('Quick links are unavailable.')
       })
-      .finally(() => active && setIsBusy(false));
+      .finally(() => active && setIsBusy(false))
     return () => {
-      active = false;
-    };
-  }, []);
+      active = false
+    }
+  }, [])
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError(null);
-    setIsBusy(true);
+    event.preventDefault()
+    setError(null)
+    setIsBusy(true)
     try {
-      const parsedUrl = new URL(url.trim());
-      if (parsedUrl.protocol !== 'https:') throw new Error('HTTPS is required');
+      const parsedUrl = new URL(url.trim())
+      if (parsedUrl.protocol !== 'https:') throw new Error('HTTPS is required')
       const next = await saveConfiguredQuickLink({
         id: editingId ?? crypto.randomUUID(),
         label: label.trim(),
         url: parsedUrl.toString(),
-      });
-      setLinks(next);
-      setLabel('');
-      setUrl('');
-      setEditingId(null);
+      })
+      setLinks(next)
+      setLabel('')
+      setUrl('')
+      setEditingId(null)
     } catch {
-      logger.warn('Rejected invalid configured quick link input');
-      setError('Enter a label and a valid HTTPS URL.');
+      logger.warn('Rejected invalid configured quick link input')
+      setError('Enter a label and a valid HTTPS URL.')
     } finally {
-      setIsBusy(false);
+      setIsBusy(false)
     }
-  };
+  }
 
   const handleEdit = (link: ConfiguredQuickLink) => {
-    logger.debug('Editing configured quick link', { linkId: link.id });
-    setEditingId(link.id);
-    setLabel(link.label);
-    setUrl(link.url);
-    setError(null);
-  };
+    logger.debug('Editing configured quick link', { linkId: link.id })
+    setEditingId(link.id)
+    setLabel(link.label)
+    setUrl(link.url)
+    setError(null)
+  }
 
   const handleRemove = async (id: string) => {
-    setIsBusy(true);
+    setIsBusy(true)
     try {
-      setLinks(await removeConfiguredQuickLink(id));
+      setLinks(await removeConfiguredQuickLink(id))
     } catch (removeError) {
       logger.error('Failed to remove configured quick link', {
-        errorName: removeError instanceof Error ? removeError.name : 'UnknownError',
-      });
-      setError('Unable to remove this quick link.');
+        errorName:
+          removeError instanceof Error ? removeError.name : 'UnknownError',
+      })
+      setError('Unable to remove this quick link.')
     } finally {
-      setIsBusy(false);
+      setIsBusy(false)
     }
-  };
+  }
 
   return (
-    <section className="quick-links-settings" aria-labelledby="quick-links-heading">
+    <section
+      className="quick-links-settings"
+      aria-labelledby="quick-links-heading"
+    >
       <header>
         <h2 id="quick-links-heading">Project quick links</h2>
         <p>Links sync inside this browser ecosystem.</p>
@@ -112,7 +120,8 @@ export const QuickLinksSettings = () => {
           disabled={isBusy}
         />
         <button type="submit" disabled={isBusy || !label.trim() || !url.trim()}>
-          <Plus aria-hidden="true" size={16} /> {editingId ? 'Save link' : 'Add link'}
+          <Plus aria-hidden="true" size={16} />{' '}
+          {editingId ? 'Save link' : 'Add link'}
         </button>
       </form>
       {error ? (
@@ -153,5 +162,5 @@ export const QuickLinksSettings = () => {
         ))}
       </ul>
     </section>
-  );
-};
+  )
+}

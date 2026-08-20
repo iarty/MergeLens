@@ -1,24 +1,24 @@
-import { createLogger } from '@/shared/logging/logger';
+import { createLogger } from '@/shared/logging/logger'
 import {
   parseDeleteReviewTemplateRequest,
   parseDeleteReviewTemplateResponse,
-} from '@/shared/messaging/protocol';
+} from '@/shared/messaging/protocol'
 import {
   LocalReviewValidationError,
   sortReviewTemplates,
-} from '../domain/LocalReview';
-import type { LocalReviewRepository } from '../ports/LocalReviewRepository';
+} from '../domain/LocalReview'
+import type { LocalReviewRepository } from '../ports/LocalReviewRepository'
 import type {
   DeleteReviewTemplateRequest,
   DeleteReviewTemplateResult,
-} from './contracts';
+} from './contracts'
 import {
   getRequestCorrelationId,
   getErrorName,
   toLocalReviewError,
-} from './operation';
+} from './operation'
 
-const logger = createLogger('localReview.deleteTemplate');
+const logger = createLogger('localReview.deleteTemplate')
 
 export const createDeleteReviewTemplate = (
   repository: LocalReviewRepository,
@@ -26,14 +26,14 @@ export const createDeleteReviewTemplate = (
   return async (
     requestInput: DeleteReviewTemplateRequest,
   ): Promise<DeleteReviewTemplateResult> => {
-    let request: DeleteReviewTemplateRequest;
+    let request: DeleteReviewTemplateRequest
 
     try {
-      request = parseDeleteReviewTemplateRequest(requestInput);
+      request = parseDeleteReviewTemplateRequest(requestInput)
     } catch (error) {
       logger.warn('Rejected review template deletion at background boundary', {
         errorName: getErrorName(error),
-      });
+      })
       return parseDeleteReviewTemplateResponse({
         status: 'error',
         correlationId: getRequestCorrelationId(requestInput),
@@ -41,52 +41,53 @@ export const createDeleteReviewTemplate = (
           code: 'invalid-input',
           message: 'Invalid review template deletion request',
         },
-      });
+      })
     }
 
-    const correlationId = request.correlationId;
-    logger.info('Handling review template deletion', { correlationId });
+    const correlationId = request.correlationId
+    logger.info('Handling review template deletion', { correlationId })
 
     try {
-      const templateId = request.templateId.trim();
+      const templateId = request.templateId.trim()
       if (templateId.length === 0) {
         throw new LocalReviewValidationError(
           'Template ID cannot be empty',
           'templateId',
-        );
+        )
       }
 
       logger.debug('Deleting review template through repository', {
         correlationId,
         templateId,
-      });
-      await repository.deleteTemplate(templateId);
-      const templates = sortReviewTemplates(await repository.listTemplates());
+      })
+      await repository.deleteTemplate(templateId)
+      const templates = sortReviewTemplates(await repository.listTemplates())
       logger.info('Review template deletion completed', {
         correlationId,
         templateId,
         templateCount: templates.length,
-      });
+      })
       return parseDeleteReviewTemplateResponse({
         status: 'success',
         correlationId,
         data: { templates },
-      });
+      })
     } catch (error) {
-      const localReviewError = toLocalReviewError(error);
-      const log = localReviewError.code === 'storage-unavailable'
-        ? logger.error
-        : logger.warn;
+      const localReviewError = toLocalReviewError(error)
+      const log =
+        localReviewError.code === 'storage-unavailable'
+          ? logger.error
+          : logger.warn
       log('Review template deletion failed', {
         correlationId,
         code: localReviewError.code,
         errorName: getErrorName(error),
-      });
+      })
       return parseDeleteReviewTemplateResponse({
         status: 'error',
         correlationId,
         error: localReviewError,
-      });
+      })
     }
-  };
-};
+  }
+}

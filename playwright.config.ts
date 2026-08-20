@@ -1,6 +1,6 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig } from '@playwright/test'
 
-const isDebugLoggingEnabled = process.env.LOG_LEVEL?.toLowerCase() === 'debug';
+const isDebugLoggingEnabled = process.env.LOG_LEVEL?.toLowerCase() === 'debug'
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -14,4 +14,4 @@ export default defineConfig({
     actionTimeout: 5_000,
     trace: isDebugLoggingEnabled ? 'retain-on-failure' : 'off',
   },
-});
+})

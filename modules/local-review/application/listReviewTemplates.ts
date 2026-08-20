@@ -1,21 +1,21 @@
-import { createLogger } from '@/shared/logging/logger';
+import { createLogger } from '@/shared/logging/logger'
 import {
   parseListReviewTemplatesRequest,
   parseListReviewTemplatesResponse,
-} from '@/shared/messaging/protocol';
-import { sortReviewTemplates } from '../domain/LocalReview';
-import type { LocalReviewRepository } from '../ports/LocalReviewRepository';
+} from '@/shared/messaging/protocol'
+import { sortReviewTemplates } from '../domain/LocalReview'
+import type { LocalReviewRepository } from '../ports/LocalReviewRepository'
 import type {
   ListReviewTemplatesRequest,
   ListReviewTemplatesResult,
-} from './contracts';
+} from './contracts'
 import {
   getRequestCorrelationId,
   getErrorName,
   toLocalReviewError,
-} from './operation';
+} from './operation'
 
-const logger = createLogger('localReview.listTemplates');
+const logger = createLogger('localReview.listTemplates')
 
 export const createListReviewTemplates = (
   repository: LocalReviewRepository,
@@ -23,14 +23,17 @@ export const createListReviewTemplates = (
   return async (
     requestInput: ListReviewTemplatesRequest,
   ): Promise<ListReviewTemplatesResult> => {
-    let request: ListReviewTemplatesRequest;
+    let request: ListReviewTemplatesRequest
 
     try {
-      request = parseListReviewTemplatesRequest(requestInput);
+      request = parseListReviewTemplatesRequest(requestInput)
     } catch (error) {
-      logger.warn('Rejected review template list request at background boundary', {
-        errorName: getErrorName(error),
-      });
+      logger.warn(
+        'Rejected review template list request at background boundary',
+        {
+          errorName: getErrorName(error),
+        },
+      )
       return parseListReviewTemplatesResponse({
         status: 'error',
         correlationId: getRequestCorrelationId(requestInput),
@@ -38,38 +41,39 @@ export const createListReviewTemplates = (
           code: 'invalid-input',
           message: 'Invalid review template list request',
         },
-      });
+      })
     }
 
-    const correlationId = request.correlationId;
-    logger.info('Handling review template list request', { correlationId });
+    const correlationId = request.correlationId
+    logger.info('Handling review template list request', { correlationId })
 
     try {
-      const templates = sortReviewTemplates(await repository.listTemplates());
+      const templates = sortReviewTemplates(await repository.listTemplates())
       logger.info('Review template list request completed', {
         correlationId,
         templateCount: templates.length,
-      });
+      })
       return parseListReviewTemplatesResponse({
         status: 'success',
         correlationId,
         data: { templates },
-      });
+      })
     } catch (error) {
-      const localReviewError = toLocalReviewError(error);
-      const log = localReviewError.code === 'storage-unavailable'
-        ? logger.error
-        : logger.warn;
+      const localReviewError = toLocalReviewError(error)
+      const log =
+        localReviewError.code === 'storage-unavailable'
+          ? logger.error
+          : logger.warn
       log('Review template list request failed', {
         correlationId,
         code: localReviewError.code,
         errorName: getErrorName(error),
-      });
+      })
       return parseListReviewTemplatesResponse({
         status: 'error',
         correlationId,
         error: localReviewError,
-      });
+      })
     }
-  };
-};
+  }
+}

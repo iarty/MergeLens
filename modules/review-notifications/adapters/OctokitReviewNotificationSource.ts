@@ -1,13 +1,13 @@
 import {
   OctokitReviewInboxReader,
   type ReviewInboxReader,
-} from '@/modules/pull-requests';
-import { createLogger } from '@/shared/logging/logger';
-import type { ReviewNotificationSourceResult } from '../domain/ReviewNotification';
-import type { ReviewNotificationSource } from '../ports/ReviewNotificationSource';
+} from '@/modules/pull-requests'
+import { createLogger } from '@/shared/logging/logger'
+import type { ReviewNotificationSourceResult } from '../domain/ReviewNotification'
+import type { ReviewNotificationSource } from '../ports/ReviewNotificationSource'
 
-const logger = createLogger('reviewNotifications.githubSource');
-const POLL_LIMIT = 20;
+const logger = createLogger('reviewNotifications.githubSource')
+const POLL_LIMIT = 20
 
 export class OctokitReviewNotificationSource implements ReviewNotificationSource {
   constructor(
@@ -18,31 +18,32 @@ export class OctokitReviewNotificationSource implements ReviewNotificationSource
     logger.debug('Requesting bounded review notification candidates', {
       section: 'review-requests',
       limit: POLL_LIMIT,
-    });
+    })
     const result = await this.reader.readSection({
       kind: 'review-requests',
       limit: POLL_LIMIT,
-    });
+    })
     if (result.status === 'error') {
       logger.warn('Review notification source returned an expected error', {
         code: result.error.code,
-      });
+      })
       return {
         status: 'error',
         error: {
-          code: result.error.code === 'invalid-request'
-            || result.error.code === 'receiver-unavailable'
-            ? 'unknown-error'
-            : result.error.code,
+          code:
+            result.error.code === 'invalid-request' ||
+            result.error.code === 'receiver-unavailable'
+              ? 'unknown-error'
+              : result.error.code,
           ...(result.error.retryAfterSeconds === undefined
             ? {}
             : { retryAfterSeconds: result.error.retryAfterSeconds }),
         },
-      };
+      }
     }
     logger.info('Review notification candidates loaded', {
       candidateCount: result.items.length,
-    });
+    })
     return {
       status: 'success',
       candidates: result.items.map((item) => ({
@@ -53,6 +54,6 @@ export class OctokitReviewNotificationSource implements ReviewNotificationSource
         pullNumber: item.number,
         updatedAt: item.updatedAt,
       })),
-    };
+    }
   }
 }

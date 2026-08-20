@@ -1,18 +1,18 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { TokenSettings } from '@/features/settings/TokenSettings';
-import { QuickLinksSettings } from '@/features/settings/QuickLinksSettings';
-import { ReviewTemplatesSettings } from '@/features/settings/ReviewTemplatesSettings';
-import { WorkspacePreferencesSettings } from '@/features/settings/WorkspacePreferencesSettings';
-import { ReviewNotificationsSettings } from '@/features/settings/ReviewNotificationsSettings';
-import { PortableLocalDataSettings } from '@/features/settings/PortableLocalDataSettings';
-import { portableLocalDataServices } from './portableLocalDataServices';
-import './style.css';
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import { TokenSettings } from '@/features/settings/TokenSettings'
+import { QuickLinksSettings } from '@/features/settings/QuickLinksSettings'
+import { ReviewTemplatesSettings } from '@/features/settings/ReviewTemplatesSettings'
+import { WorkspacePreferencesSettings } from '@/features/settings/WorkspacePreferencesSettings'
+import { ReviewNotificationsSettings } from '@/features/settings/ReviewNotificationsSettings'
+import { PortableLocalDataSettings } from '@/features/settings/PortableLocalDataSettings'
+import { portableLocalDataServices } from './portableLocalDataServices'
+import './style.css'
 
-const rootElement = document.getElementById('root');
+const rootElement = document.getElementById('root')
 
 if (!rootElement) {
-  throw new Error('Options root element is unavailable');
+  throw new Error('Options root element is unavailable')
 }
 
 ReactDOM.createRoot(rootElement).render(
@@ -26,4 +26,4 @@ ReactDOM.createRoot(rootElement).render(
       <PortableLocalDataSettings services={portableLocalDataServices} />
     </div>
   </React.StrictMode>,
-);
+)

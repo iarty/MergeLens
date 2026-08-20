@@ -1,9 +1,9 @@
-import type { PullRequestToolbarData } from '../domain/PullRequestSummary';
+import type { PullRequestToolbarData } from '../domain/PullRequestSummary'
 
 export interface ReadPullRequestInput {
-  owner: string;
-  repository: string;
-  pullNumber: number;
+  owner: string
+  repository: string
+  pullNumber: number
 }
 
 export type PullRequestReadErrorCode =
@@ -12,19 +12,19 @@ export type PullRequestReadErrorCode =
   | 'rate-limited'
   | 'network-error'
   | 'invalid-response'
-  | 'unknown-error';
+  | 'unknown-error'
 
 export type PullRequestReadResult =
   | { status: 'success'; data: PullRequestToolbarData }
   | {
-      status: 'error';
+      status: 'error'
       error: {
-        code: PullRequestReadErrorCode;
-        message: string;
-        retryAfterSeconds?: number;
-      };
-    };
+        code: PullRequestReadErrorCode
+        message: string
+        retryAfterSeconds?: number
+      }
+    }
 
 export interface PullRequestReader {
-  read(input: ReadPullRequestInput): Promise<PullRequestReadResult>;
+  read(input: ReadPullRequestInput): Promise<PullRequestReadResult>
 }

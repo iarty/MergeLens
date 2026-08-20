@@ -1,9 +1,9 @@
-import { z } from 'zod';
+import { z } from 'zod'
 import type {
   ReviewInboxPullRequest,
   ReviewInboxReason,
   ReviewInboxSectionKind,
-} from '../domain/ReviewInbox';
+} from '../domain/ReviewInbox'
 
 const searchResultItemSchema = z.object({
   id: z.number().int().positive(),
@@ -19,27 +19,27 @@ const searchResultItemSchema = z.object({
   draft: z.boolean().optional(),
   updated_at: z.iso.datetime({ offset: true }),
   pull_request: z.object({}).passthrough(),
-});
+})
 
-const REPOSITORY_API_PATH = /^\/repos\/([^/]+)\/([^/]+)$/;
+const REPOSITORY_API_PATH = /^\/repos\/([^/]+)\/([^/]+)$/
 
 const getReason = (kind: ReviewInboxSectionKind): ReviewInboxReason => {
   const reasons: Record<ReviewInboxSectionKind, ReviewInboxReason> = {
     'review-requests': 'review-requested',
     assigned: 'assigned',
     'recent-activity': 'recent-activity',
-  };
+  }
 
-  return reasons[kind];
-};
+  return reasons[kind]
+}
 
 export const mapReviewInboxSearchItem = (
   input: unknown,
   kind: ReviewInboxSectionKind,
 ): ReviewInboxPullRequest => {
-  const item = searchResultItemSchema.parse(input);
-  const repositoryUrl = new URL(item.repository_url);
-  const repositoryMatch = repositoryUrl.pathname.match(REPOSITORY_API_PATH);
+  const item = searchResultItemSchema.parse(input)
+  const repositoryUrl = new URL(item.repository_url)
+  const repositoryMatch = repositoryUrl.pathname.match(REPOSITORY_API_PATH)
 
   if (repositoryUrl.origin !== 'https://api.github.com' || !repositoryMatch) {
     throw new z.ZodError([
@@ -49,12 +49,12 @@ export const mapReviewInboxSearchItem = (
         message: 'Unsupported GitHub repository URL',
         input: item.repository_url,
       },
-    ]);
+    ])
   }
 
-  const [, owner, name] = repositoryMatch;
+  const [, owner, name] = repositoryMatch
   if (!owner || !name) {
-    throw new Error('Repository identity is unavailable');
+    throw new Error('Repository identity is unavailable')
   }
 
   return {
@@ -72,12 +72,12 @@ export const mapReviewInboxSearchItem = (
     isDraft: item.draft ?? false,
     updatedAt: item.updated_at,
     reasons: [getReason(kind)],
-  };
-};
+  }
+}
 
 export const mapReviewInboxSearchItems = (
   input: readonly unknown[],
   kind: ReviewInboxSectionKind,
 ): ReviewInboxPullRequest[] => {
-  return input.map((item) => mapReviewInboxSearchItem(item, kind));
-};
+  return input.map((item) => mapReviewInboxSearchItem(item, kind))
+}
