@@ -1,24 +1,32 @@
-import { defineConfig } from 'wxt';
+import { defineConfig } from 'wxt'
 
-const rawUnicodeNoncharacter = String.fromCharCode(0xffff);
+const rawUnicodeNoncharacter = String.fromCharCode(0xffff)
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
   modulesDir: '.wxt-modules',
   modules: ['@wxt-dev/module-react'],
   vite: () => ({
-    plugins: [{
-      name: 'escape-extension-noncharacters',
-      enforce: 'post',
-      generateBundle(_options, bundle) {
-        for (const output of Object.values(bundle)) {
-          if (output.type !== 'chunk' || !output.code.includes(rawUnicodeNoncharacter)) {
-            continue;
+    plugins: [
+      {
+        name: 'escape-extension-noncharacters',
+        enforce: 'post',
+        generateBundle(_options, bundle) {
+          for (const output of Object.values(bundle)) {
+            if (
+              output.type !== 'chunk' ||
+              !output.code.includes(rawUnicodeNoncharacter)
+            ) {
+              continue
+            }
+            output.code = output.code.replaceAll(
+              rawUnicodeNoncharacter,
+              '\\uFFFF',
+            )
           }
-          output.code = output.code.replaceAll(rawUnicodeNoncharacter, '\\uFFFF');
-        }
+        },
       },
-    }],
+    ],
   }),
   manifest: {
     name: 'MergeLens',
@@ -35,4 +43,4 @@ export default defineConfig({
       },
     },
   },
-});
+})

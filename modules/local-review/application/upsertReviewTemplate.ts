@@ -1,45 +1,45 @@
-import { createLogger } from '@/shared/logging/logger';
+import { createLogger } from '@/shared/logging/logger'
 import {
   parseUpsertReviewTemplateRequest,
   parseUpsertReviewTemplateResponse,
-} from '@/shared/messaging/protocol';
+} from '@/shared/messaging/protocol'
 import {
   normalizeReviewTemplateDraft,
   sortReviewTemplates,
   type ReviewTemplate,
-} from '../domain/LocalReview';
-import type { LocalReviewRepository } from '../ports/LocalReviewRepository';
+} from '../domain/LocalReview'
+import type { LocalReviewRepository } from '../ports/LocalReviewRepository'
 import type {
   LocalReviewUseCaseDependencies,
   UpsertReviewTemplateRequest,
   UpsertReviewTemplateResult,
-} from './contracts';
+} from './contracts'
 import {
   getRequestCorrelationId,
   getErrorName,
   toLocalReviewError,
-} from './operation';
+} from './operation'
 
-const logger = createLogger('localReview.upsertTemplate');
+const logger = createLogger('localReview.upsertTemplate')
 
 export const createUpsertReviewTemplate = (
   repository: LocalReviewRepository,
   dependencies: LocalReviewUseCaseDependencies = {},
 ) => {
-  const now = dependencies.now ?? (() => new Date());
-  const createId = dependencies.createId ?? (() => crypto.randomUUID());
+  const now = dependencies.now ?? (() => new Date())
+  const createId = dependencies.createId ?? (() => crypto.randomUUID())
 
   return async (
     requestInput: UpsertReviewTemplateRequest,
   ): Promise<UpsertReviewTemplateResult> => {
-    let request: UpsertReviewTemplateRequest;
+    let request: UpsertReviewTemplateRequest
 
     try {
-      request = parseUpsertReviewTemplateRequest(requestInput);
+      request = parseUpsertReviewTemplateRequest(requestInput)
     } catch (error) {
       logger.warn('Rejected review template upsert at background boundary', {
         errorName: getErrorName(error),
-      });
+      })
       return parseUpsertReviewTemplateResponse({
         status: 'error',
         correlationId: getRequestCorrelationId(requestInput),
@@ -47,55 +47,56 @@ export const createUpsertReviewTemplate = (
           code: 'invalid-input',
           message: 'Invalid review template upsert request',
         },
-      });
+      })
     }
 
-    const correlationId = request.correlationId;
-    logger.info('Handling review template upsert', { correlationId });
+    const correlationId = request.correlationId
+    logger.info('Handling review template upsert', { correlationId })
 
     try {
-      const draft = normalizeReviewTemplateDraft(request.template);
-      const timestamp = now().toISOString();
+      const draft = normalizeReviewTemplateDraft(request.template)
+      const timestamp = now().toISOString()
       const template: ReviewTemplate = {
         id: draft.id ?? createId(),
         title: draft.title,
         body: draft.body,
         createdAt: timestamp,
         updatedAt: timestamp,
-      };
+      }
       logger.debug('Persisting review template', {
         correlationId,
         templateId: template.id,
         titleLength: template.title.length,
         bodyLength: template.body.length,
-      });
-      const savedTemplate = await repository.upsertTemplate(template);
-      const templates = sortReviewTemplates(await repository.listTemplates());
+      })
+      const savedTemplate = await repository.upsertTemplate(template)
+      const templates = sortReviewTemplates(await repository.listTemplates())
       logger.info('Review template upsert completed', {
         correlationId,
         templateId: savedTemplate.id,
         templateCount: templates.length,
-      });
+      })
       return parseUpsertReviewTemplateResponse({
         status: 'success',
         correlationId,
         data: { template: savedTemplate, templates },
-      });
+      })
     } catch (error) {
-      const localReviewError = toLocalReviewError(error);
-      const log = localReviewError.code === 'storage-unavailable'
-        ? logger.error
-        : logger.warn;
+      const localReviewError = toLocalReviewError(error)
+      const log =
+        localReviewError.code === 'storage-unavailable'
+          ? logger.error
+          : logger.warn
       log('Review template upsert failed', {
         correlationId,
         code: localReviewError.code,
         errorName: getErrorName(error),
-      });
+      })
       return parseUpsertReviewTemplateResponse({
         status: 'error',
         correlationId,
         error: localReviewError,
-      });
+      })
     }
-  };
-};
+  }
+}

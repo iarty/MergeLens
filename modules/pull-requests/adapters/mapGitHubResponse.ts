@@ -1,6 +1,9 @@
-import { z } from 'zod';
-import type { CheckStatus } from '../domain/CheckSummary';
-import type { PullRequestFileSummary, PullRequestToolbarData } from '../domain/PullRequestSummary';
+import { z } from 'zod'
+import type { CheckStatus } from '../domain/CheckSummary'
+import type {
+  PullRequestFileSummary,
+  PullRequestToolbarData,
+} from '../domain/PullRequestSummary'
 
 const pullRequestResponseSchema = z.object({
   html_url: z.url(),
@@ -10,7 +13,7 @@ const pullRequestResponseSchema = z.object({
   draft: z.boolean().nullable(),
   user: z.object({ login: z.string() }).nullable(),
   head: z.object({ sha: z.string().min(1) }),
-});
+})
 
 const checkRunsResponseSchema = z.object({
   check_runs: z.array(
@@ -41,32 +44,45 @@ const checkRunsResponseSchema = z.object({
       details_url: z.url().nullable(),
     }),
   ),
-});
+})
 
-const pullRequestFilesResponseSchema = z.array(z.object({
-  filename: z.string().min(1),
-  additions: z.number().int().nonnegative(),
-  deletions: z.number().int().nonnegative(),
-  changes: z.number().int().nonnegative(),
-  status: z.string().optional(),
-  generated: z.boolean().optional(),
-}));
+const pullRequestFilesResponseSchema = z.array(
+  z.object({
+    filename: z.string().min(1),
+    additions: z.number().int().nonnegative(),
+    deletions: z.number().int().nonnegative(),
+    changes: z.number().int().nonnegative(),
+    status: z.string().optional(),
+    generated: z.boolean().optional(),
+  }),
+)
 
-const generatedFilePatterns = ['*.lock', 'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml'];
-const matchesGeneratedPattern = (path: string): boolean => generatedFilePatterns.some((pattern) =>
-  pattern.startsWith('*.') ? path.toLowerCase().endsWith(pattern.slice(1)) : path.toLowerCase().endsWith(pattern.toLowerCase()),
-);
+const generatedFilePatterns = [
+  '*.lock',
+  'package-lock.json',
+  'yarn.lock',
+  'pnpm-lock.yaml',
+]
+const matchesGeneratedPattern = (path: string): boolean =>
+  generatedFilePatterns.some((pattern) =>
+    pattern.startsWith('*.')
+      ? path.toLowerCase().endsWith(pattern.slice(1))
+      : path.toLowerCase().endsWith(pattern.toLowerCase()),
+  )
 
-export const mapPullRequestFiles = (input: unknown): PullRequestFileSummary[] => {
-  const files = pullRequestFilesResponseSchema.parse(input);
+export const mapPullRequestFiles = (
+  input: unknown,
+): PullRequestFileSummary[] => {
+  const files = pullRequestFilesResponseSchema.parse(input)
   return files.map((file) => ({
     path: file.filename,
     additions: file.additions,
     deletions: file.deletions,
     changes: file.changes,
-    isGenerated: file.generated === true || matchesGeneratedPattern(file.filename),
-  }));
-};
+    isGenerated:
+      file.generated === true || matchesGeneratedPattern(file.filename),
+  }))
+}
 
 const mapCheckStatus = (
   status:
@@ -94,14 +110,16 @@ const mapCheckStatus = (
     status === 'waiting' ||
     status === 'requested'
   ) {
-    return 'queued';
+    return 'queued'
   }
 
   if (status === 'in_progress') {
-    return 'in-progress';
+    return 'in-progress'
   }
 
-  const conclusions: Partial<Record<NonNullable<typeof conclusion>, CheckStatus>> = {
+  const conclusions: Partial<
+    Record<NonNullable<typeof conclusion>, CheckStatus>
+  > = {
     action_required: 'action-required',
     cancelled: 'cancelled',
     failure: 'failure',
@@ -109,14 +127,14 @@ const mapCheckStatus = (
     skipped: 'skipped',
     success: 'success',
     timed_out: 'timed-out',
-  };
+  }
 
-  return conclusion ? (conclusions[conclusion] ?? 'unknown') : 'unknown';
-};
+  return conclusion ? (conclusions[conclusion] ?? 'unknown') : 'unknown'
+}
 
 export const getPullRequestHeadSha = (input: unknown): string => {
-  return pullRequestResponseSchema.parse(input).head.sha;
-};
+  return pullRequestResponseSchema.parse(input).head.sha
+}
 
 export const mapGitHubResponse = (
   pullRequestInput: unknown,
@@ -126,10 +144,11 @@ export const mapGitHubResponse = (
   filesInput?: unknown,
   filesTruncated = false,
 ): PullRequestToolbarData => {
-  const pullRequest = pullRequestResponseSchema.parse(pullRequestInput);
-  const checkRuns = checkRunsResponseSchema.parse(checkRunsInput);
+  const pullRequest = pullRequestResponseSchema.parse(pullRequestInput)
+  const checkRuns = checkRunsResponseSchema.parse(checkRunsInput)
 
-  const files = filesInput === undefined ? undefined : mapPullRequestFiles(filesInput);
+  const files =
+    filesInput === undefined ? undefined : mapPullRequestFiles(filesInput)
   return {
     pullRequest: {
       title: pullRequest.title,
@@ -146,5 +165,5 @@ export const mapGitHubResponse = (
     })),
     actionsUrl: `https://github.com/${encodeURIComponent(owner)}/${encodeURIComponent(repository)}/actions`,
     ...(files === undefined ? {} : { files, filesTruncated }),
-  };
-};
+  }
+}

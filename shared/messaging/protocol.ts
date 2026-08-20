@@ -1,5 +1,5 @@
-import { defineExtensionMessaging } from "@webext-core/messaging";
-import { createLogger } from "@/shared/logging/logger";
+import { defineExtensionMessaging } from '@webext-core/messaging'
+import { createLogger } from '@/shared/logging/logger'
 import {
   deleteReviewTemplateRequestSchema,
   deleteReviewTemplateResponseSchema,
@@ -35,185 +35,194 @@ import {
   type ToolbarResponse,
   type UpsertReviewTemplateRequest,
   type UpsertReviewTemplateResponse,
-} from "./schemas";
+} from './schemas'
 
-const logger = createLogger("messaging");
+const logger = createLogger('messaging')
 
 export interface MergeLensProtocolMap {
-  getPullRequestToolbarData(data: ToolbarRequest): ToolbarResponse;
-  getPullRequestQuickLinks(data: QuickLinksRequest): QuickLinksResponse;
-  getReviewInbox(data: ReviewInboxRequest): ReviewInboxResponse;
+  getPullRequestToolbarData(data: ToolbarRequest): ToolbarResponse
+  getPullRequestQuickLinks(data: QuickLinksRequest): QuickLinksResponse
+  getReviewInbox(data: ReviewInboxRequest): ReviewInboxResponse
   getLocalReviewWorkspace(
     data: GetLocalReviewWorkspaceRequest,
-  ): GetLocalReviewWorkspaceResponse;
+  ): GetLocalReviewWorkspaceResponse
   savePullRequestNote(
     data: SavePullRequestNoteRequest,
-  ): SavePullRequestNoteResponse;
+  ): SavePullRequestNoteResponse
   listReviewTemplates(
     data: ListReviewTemplatesRequest,
-  ): ListReviewTemplatesResponse;
+  ): ListReviewTemplatesResponse
   upsertReviewTemplate(
     data: UpsertReviewTemplateRequest,
-  ): UpsertReviewTemplateResponse;
+  ): UpsertReviewTemplateResponse
   deleteReviewTemplate(
     data: DeleteReviewTemplateRequest,
-  ): DeleteReviewTemplateResponse;
-  openOptionsPage(): OpenOptionsPageResponse;
-  openCommandPalette(): OpenCommandPaletteResponse;
+  ): DeleteReviewTemplateResponse
+  openOptionsPage(): OpenOptionsPageResponse
+  openCommandPalette(): OpenCommandPaletteResponse
 }
 
 export const { onMessage, removeAllListeners, sendMessage } =
   defineExtensionMessaging<MergeLensProtocolMap>({
     logger: {
-      debug: (...args) => logger.debug("Message debug event", {
-        argumentCount: args.length,
-      }),
-      log: (...args) => logger.info("Message lifecycle event", {
-        argumentCount: args.length,
-      }),
-      warn: (...args) => logger.warn("Message warning", {
-        argumentCount: args.length,
-      }),
-      error: (...args) => logger.error("Message failure", {
-        argumentCount: args.length,
-      }),
+      debug: (...args) =>
+        logger.debug('Message debug event', {
+          argumentCount: args.length,
+        }),
+      log: (...args) =>
+        logger.info('Message lifecycle event', {
+          argumentCount: args.length,
+        }),
+      warn: (...args) =>
+        logger.warn('Message warning', {
+          argumentCount: args.length,
+        }),
+      error: (...args) =>
+        logger.error('Message failure', {
+          argumentCount: args.length,
+        }),
     },
     throwOnUnknownMessageFormat: false,
-  });
+  })
 
 export const parseToolbarRequest = (input: unknown): ToolbarRequest => {
-  const result = toolbarRequestSchema.safeParse(input);
+  const result = toolbarRequestSchema.safeParse(input)
   if (!result.success) {
-    logger.warn("Rejected invalid toolbar request", {
+    logger.warn('Rejected invalid toolbar request', {
       issueCount: result.error.issues.length,
-    });
-    throw new Error("Invalid PR toolbar request");
+    })
+    throw new Error('Invalid PR toolbar request')
   }
 
-  logger.debug("Validated toolbar request", {
+  logger.debug('Validated toolbar request', {
     correlationId: result.data.correlationId,
     owner: result.data.context.owner,
     repository: result.data.context.repository,
     pullNumber: result.data.context.pullNumber,
-  });
-  return result.data;
-};
+  })
+  return result.data
+}
 
 export const parseToolbarResponse = (input: unknown): ToolbarResponse => {
-  const result = toolbarResponseSchema.safeParse(input);
+  const result = toolbarResponseSchema.safeParse(input)
   if (!result.success) {
-    logger.warn("Rejected invalid toolbar response", {
+    logger.warn('Rejected invalid toolbar response', {
       issueCount: result.error.issues.length,
-    });
-    throw new Error("Invalid PR toolbar response");
+    })
+    throw new Error('Invalid PR toolbar response')
   }
 
-  logger.debug("Validated toolbar response", {
+  logger.debug('Validated toolbar response', {
     correlationId: result.data.correlationId,
     status: result.data.status,
-  });
-  return result.data;
-};
+  })
+  return result.data
+}
 
 export const parseQuickLinksRequest = (input: unknown): QuickLinksRequest => {
-  const result = quickLinksRequestSchema.safeParse(input);
+  const result = quickLinksRequestSchema.safeParse(input)
   if (!result.success) {
-    logger.warn("Rejected invalid quick links request", {
+    logger.warn('Rejected invalid quick links request', {
       issueCount: result.error.issues.length,
-    });
-    throw new Error("Invalid quick links request");
+    })
+    throw new Error('Invalid quick links request')
   }
-  logger.debug("Validated quick links request", {
+  logger.debug('Validated quick links request', {
     correlationId: result.data.correlationId,
     owner: result.data.context.owner,
     repository: result.data.context.repository,
     pullNumber: result.data.context.pullNumber,
-  });
-  return result.data;
-};
+  })
+  return result.data
+}
 
 export const parseQuickLinksResponse = (input: unknown): QuickLinksResponse => {
-  const result = quickLinksResponseSchema.safeParse(input);
+  const result = quickLinksResponseSchema.safeParse(input)
   if (!result.success) {
-    logger.warn("Rejected invalid quick links response", {
+    logger.warn('Rejected invalid quick links response', {
       issueCount: result.error.issues.length,
-    });
-    throw new Error("Invalid quick links response");
+    })
+    throw new Error('Invalid quick links response')
   }
-  logger.debug("Validated quick links response", {
+  logger.debug('Validated quick links response', {
     correlationId: result.data.correlationId,
     status: result.data.status,
-  });
-  return result.data;
-};
+  })
+  return result.data
+}
 
 export const parseReviewInboxRequest = (input: unknown): ReviewInboxRequest => {
-  const result = reviewInboxRequestSchema.safeParse(input);
+  const result = reviewInboxRequestSchema.safeParse(input)
   if (!result.success) {
-    logger.warn("Rejected invalid review inbox request", {
+    logger.warn('Rejected invalid review inbox request', {
       issueCount: result.error.issues.length,
-    });
-    throw new Error("Invalid review inbox request");
+    })
+    throw new Error('Invalid review inbox request')
   }
 
-  logger.debug("Validated review inbox request", {
+  logger.debug('Validated review inbox request', {
     correlationId: result.data.correlationId,
-  });
-  return result.data;
-};
+  })
+  return result.data
+}
 
 export const parseReviewInboxResponse = (
   input: unknown,
 ): ReviewInboxResponse => {
-  const result = reviewInboxResponseSchema.safeParse(input);
+  const result = reviewInboxResponseSchema.safeParse(input)
   if (!result.success) {
-    logger.warn("Rejected invalid review inbox response", {
+    logger.warn('Rejected invalid review inbox response', {
       issueCount: result.error.issues.length,
-    });
-    throw new Error("Invalid review inbox response");
+    })
+    throw new Error('Invalid review inbox response')
   }
 
-  logger.debug("Validated review inbox response", {
+  logger.debug('Validated review inbox response', {
     correlationId: result.data.correlationId,
     status: result.data.status,
     sectionStatuses:
-      result.data.status === "success"
+      result.data.status === 'success'
         ? {
             reviewRequests: result.data.data.reviewRequests.status,
             assigned: result.data.data.assigned.status,
             recentActivity: result.data.data.recentActivity.status,
           }
         : undefined,
-  });
-  return result.data;
-};
+  })
+  return result.data
+}
 
 const parseLocalReviewMessage = <T>(
-  schema: { safeParse: (input: unknown) =>
-    | { success: true; data: T }
-    | { success: false; error: { issues: unknown[] } } },
+  schema: {
+    safeParse: (
+      input: unknown,
+    ) =>
+      | { success: true; data: T }
+      | { success: false; error: { issues: unknown[] } }
+  },
   input: unknown,
   label: string,
   metadata: (data: T) => Record<string, unknown>,
 ): T => {
-  const result = schema.safeParse(input);
+  const result = schema.safeParse(input)
   if (!result.success) {
     logger.warn(`Rejected invalid ${label}`, {
       issueCount: result.error.issues.length,
-    });
-    throw new Error(`Invalid ${label}`);
+    })
+    throw new Error(`Invalid ${label}`)
   }
 
-  logger.debug(`Validated ${label}`, metadata(result.data));
-  return result.data;
-};
+  logger.debug(`Validated ${label}`, metadata(result.data))
+  return result.data
+}
 
-const responseMetadata = (
-  response: { correlationId: string; status: 'success' | 'error' },
-) => ({
+const responseMetadata = (response: {
+  correlationId: string
+  status: 'success' | 'error'
+}) => ({
   correlationId: response.correlationId,
   status: response.status,
-});
+})
 
 export const parseGetLocalReviewWorkspaceRequest = (
   input: unknown,
@@ -228,7 +237,7 @@ export const parseGetLocalReviewWorkspaceRequest = (
       repository: request.context.repository,
       pullNumber: request.context.pullNumber,
     }),
-  );
+  )
 
 export const parseGetLocalReviewWorkspaceResponse = (
   input: unknown,
@@ -238,7 +247,7 @@ export const parseGetLocalReviewWorkspaceResponse = (
     input,
     'local review workspace response',
     responseMetadata,
-  );
+  )
 
 export const parseSavePullRequestNoteRequest = (
   input: unknown,
@@ -254,7 +263,7 @@ export const parseSavePullRequestNoteRequest = (
       pullNumber: request.context.pullNumber,
       bodyLength: request.body.length,
     }),
-  );
+  )
 
 export const parseSavePullRequestNoteResponse = (
   input: unknown,
@@ -264,7 +273,7 @@ export const parseSavePullRequestNoteResponse = (
     input,
     'pull request note save response',
     responseMetadata,
-  );
+  )
 
 export const parseListReviewTemplatesRequest = (
   input: unknown,
@@ -274,7 +283,7 @@ export const parseListReviewTemplatesRequest = (
     input,
     'review template list request',
     (request) => ({ correlationId: request.correlationId }),
-  );
+  )
 
 export const parseListReviewTemplatesResponse = (
   input: unknown,
@@ -284,7 +293,7 @@ export const parseListReviewTemplatesResponse = (
     input,
     'review template list response',
     responseMetadata,
-  );
+  )
 
 export const parseUpsertReviewTemplateRequest = (
   input: unknown,
@@ -299,7 +308,7 @@ export const parseUpsertReviewTemplateRequest = (
       titleLength: request.template.title.length,
       bodyLength: request.template.body.length,
     }),
-  );
+  )
 
 export const parseUpsertReviewTemplateResponse = (
   input: unknown,
@@ -309,7 +318,7 @@ export const parseUpsertReviewTemplateResponse = (
     input,
     'review template upsert response',
     responseMetadata,
-  );
+  )
 
 export const parseDeleteReviewTemplateRequest = (
   input: unknown,
@@ -322,7 +331,7 @@ export const parseDeleteReviewTemplateRequest = (
       correlationId: request.correlationId,
       templateId: request.templateId,
     }),
-  );
+  )
 
 export const parseDeleteReviewTemplateResponse = (
   input: unknown,
@@ -332,20 +341,20 @@ export const parseDeleteReviewTemplateResponse = (
     input,
     'review template delete response',
     responseMetadata,
-  );
+  )
 
 export const createCorrelationId = (): string => {
-  return crypto.randomUUID();
-};
+  return crypto.randomUUID()
+}
 
 export const isReceiverUnavailableError = (error: unknown): boolean => {
   if (!(error instanceof Error)) {
-    return false;
+    return false
   }
 
   return (
-    error.message.includes("Receiving end does not exist") ||
-    error.message.includes("Could not establish connection") ||
-    error.message.includes("No listener was registered")
-  );
-};
+    error.message.includes('Receiving end does not exist') ||
+    error.message.includes('Could not establish connection') ||
+    error.message.includes('No listener was registered')
+  )
+}

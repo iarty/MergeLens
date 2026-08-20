@@ -1,46 +1,46 @@
-import { NotebookPen } from "lucide-react";
-import { useEffect } from "react";
-import { LocalReviewPanel } from "@/features/local-review/LocalReviewPanel";
-import type { CheckStatus } from "@/modules/pull-requests";
-import { createLogger } from "@/shared/logging/logger";
-import type { PRToolbarError, PRToolbarProps } from "./types";
-import "./PRToolbar.css";
+import { NotebookPen } from 'lucide-react'
+import { useEffect } from 'react'
+import { LocalReviewPanel } from '@/features/local-review/LocalReviewPanel'
+import type { CheckStatus } from '@/modules/pull-requests'
+import { createLogger } from '@/shared/logging/logger'
+import type { PRToolbarError, PRToolbarProps } from './types'
+import './PRToolbar.css'
 
-const logger = createLogger("prToolbar.ui");
+const logger = createLogger('prToolbar.ui')
 
 const CHECK_STATUS_LABELS: Record<CheckStatus, string> = {
-  "action-required": "Action required",
-  cancelled: "Cancelled",
-  failure: "Failed",
-  "in-progress": "In progress",
-  neutral: "Neutral",
-  queued: "Queued",
-  skipped: "Skipped",
-  success: "Passed",
-  "timed-out": "Timed out",
-  unknown: "Unknown",
-};
+  'action-required': 'Action required',
+  cancelled: 'Cancelled',
+  failure: 'Failed',
+  'in-progress': 'In progress',
+  neutral: 'Neutral',
+  queued: 'Queued',
+  skipped: 'Skipped',
+  success: 'Passed',
+  'timed-out': 'Timed out',
+  unknown: 'Unknown',
+}
 
-const RETRYABLE_ERROR_CODES = new Set<PRToolbarError["code"]>([
-  "network-error",
-  "rate-limited",
-  "receiver-unavailable",
-  "unknown-error",
-]);
+const RETRYABLE_ERROR_CODES = new Set<PRToolbarError['code']>([
+  'network-error',
+  'rate-limited',
+  'receiver-unavailable',
+  'unknown-error',
+])
 
 const getErrorTitle = (error: PRToolbarError): string => {
-  const titles: Partial<Record<PRToolbarError["code"], string>> = {
-    "invalid-request": "Page context changed",
-    "invalid-response": "GitHub returned unexpected data",
-    "network-error": "GitHub is unreachable",
-    "rate-limited": "GitHub rate limit reached",
-    "receiver-unavailable": "MergeLens is reconnecting",
-    unauthorized: "GitHub token needs attention",
-    "unknown-error": "PR data is unavailable",
-  };
+  const titles: Partial<Record<PRToolbarError['code'], string>> = {
+    'invalid-request': 'Page context changed',
+    'invalid-response': 'GitHub returned unexpected data',
+    'network-error': 'GitHub is unreachable',
+    'rate-limited': 'GitHub rate limit reached',
+    'receiver-unavailable': 'MergeLens is reconnecting',
+    unauthorized: 'GitHub token needs attention',
+    'unknown-error': 'PR data is unavailable',
+  }
 
-  return titles[error.code] ?? "PR data is unavailable";
-};
+  return titles[error.code] ?? 'PR data is unavailable'
+}
 
 const LoadingState = () => {
   return (
@@ -51,8 +51,8 @@ const LoadingState = () => {
         <span>Fetching status and checks from GitHub</span>
       </span>
     </div>
-  );
-};
+  )
+}
 
 const UnsupportedState = () => {
   return (
@@ -63,12 +63,12 @@ const UnsupportedState = () => {
         <span>MergeLens will activate on a supported GitHub PR page</span>
       </span>
     </div>
-  );
-};
+  )
+}
 
 const MissingTokenState = ({
   onOpenSettings,
-}: Pick<PRToolbarProps, "onOpenSettings">) => {
+}: Pick<PRToolbarProps, 'onOpenSettings'>) => {
   return (
     <div
       className="pr-toolbar__message pr-toolbar__message--warning"
@@ -89,21 +89,21 @@ const MissingTokenState = ({
         </button>
       ) : null}
     </div>
-  );
-};
+  )
+}
 
 const ErrorState = ({
   error,
   onRetry,
 }: {
-  error: PRToolbarError;
-  onRetry?: () => void;
+  error: PRToolbarError
+  onRetry?: () => void
 }) => {
-  const canRetry = RETRYABLE_ERROR_CODES.has(error.code) && onRetry;
+  const canRetry = RETRYABLE_ERROR_CODES.has(error.code) && onRetry
   const retryMessage =
-    error.code === "rate-limited" && error.retryAfterSeconds !== undefined
+    error.code === 'rate-limited' && error.retryAfterSeconds !== undefined
       ? `Retry available in about ${error.retryAfterSeconds} seconds`
-      : error.message;
+      : error.message
 
   return (
     <div
@@ -121,14 +121,14 @@ const ErrorState = ({
         </button>
       ) : null}
     </div>
-  );
-};
+  )
+}
 
 const EstimationSummary = ({
   data,
-}: Pick<Extract<PRToolbarProps["state"], { status: "success" }>, "data">) => {
-  const estimate = data.estimation;
-  if (!estimate) return null;
+}: Pick<Extract<PRToolbarProps['state'], { status: 'success' }>, 'data'>) => {
+  const estimate = data.estimation
+  if (!estimate) return null
   return (
     <div className="pr-toolbar__estimation" aria-label="Pull request estimate">
       <span
@@ -138,25 +138,25 @@ const EstimationSummary = ({
       </span>
       <span className="pr-toolbar__estimate-score">{estimate.score}/100</span>
       <span className="pr-toolbar__estimate-drivers">
-        {estimate.counts.files} files,{" "}
+        {estimate.counts.files} files,{' '}
         {estimate.counts.additions + estimate.counts.deletions} changes
       </span>
       {estimate.uncertain ? (
         <span className="pr-toolbar__estimate-uncertain">Partial data</span>
       ) : null}
     </div>
-  );
-};
+  )
+}
 
 const SuccessState = ({
   data,
   quickLinksError,
   quickLinksStatus,
   onRetry,
-}: Extract<PRToolbarProps["state"], { status: "success" }> &
-  Pick<PRToolbarProps, "onRetry">) => {
-  const visibleChecks = data.checks.slice(0, 4);
-  const remainingCheckCount = data.checks.length - visibleChecks.length;
+}: Extract<PRToolbarProps['state'], { status: 'success' }> &
+  Pick<PRToolbarProps, 'onRetry'>) => {
+  const visibleChecks = data.checks.slice(0, 4)
+  const remainingCheckCount = data.checks.length - visibleChecks.length
 
   return (
     <div className="pr-toolbar__success">
@@ -195,7 +195,7 @@ const SuccessState = ({
                   {CHECK_STATUS_LABELS[check.status]}
                 </span>
               </>
-            );
+            )
 
             return check.detailsUrl ? (
               <a
@@ -216,7 +216,7 @@ const SuccessState = ({
               >
                 {content}
               </span>
-            );
+            )
           })
         )}
         {remainingCheckCount > 0 ? (
@@ -252,7 +252,7 @@ const SuccessState = ({
                 <span>{deployment.environment}</span>
                 <span className="pr-toolbar__sr-only">{deployment.state}</span>
               </>
-            );
+            )
             return deployment.url ? (
               <a
                 className="pr-toolbar__deployment"
@@ -272,7 +272,7 @@ const SuccessState = ({
               >
                 {content}
               </span>
-            );
+            )
           })}
           {data.quickLinks.deployments.length === 0 &&
           data.quickLinks.configuredLinks.length === 0 ? (
@@ -282,20 +282,20 @@ const SuccessState = ({
           ) : null}
         </div>
       ) : null}
-      {quickLinksStatus === "loading" ? (
+      {quickLinksStatus === 'loading' ? (
         <span className="pr-toolbar__quick-links-status" role="status">
           Loading deployments
         </span>
       ) : null}
-      {quickLinksStatus === "error" ? (
+      {quickLinksStatus === 'error' ? (
         <div className="pr-toolbar__quick-links-error">
           <span
             className="pr-toolbar__quick-links-status pr-toolbar__quick-links-status--error"
             role="status"
           >
-            {quickLinksError?.code === "rate-limited"
-              ? "Deployments rate limited"
-              : "Deployments unavailable"}
+            {quickLinksError?.code === 'rate-limited'
+              ? 'Deployments rate limited'
+              : 'Deployments unavailable'}
           </span>
           {onRetry ? (
             <button
@@ -309,8 +309,8 @@ const SuccessState = ({
         </div>
       ) : null}
     </div>
-  );
-};
+  )
+}
 
 export const PRToolbar = ({
   state,
@@ -322,22 +322,22 @@ export const PRToolbar = ({
 }: PRToolbarProps) => {
   useEffect(() => {
     const checkCount =
-      state.status === "success" ? state.data.checks.length : undefined;
+      state.status === 'success' ? state.data.checks.length : undefined
     const estimation =
-      state.status === "success" ? state.data.estimation : undefined;
-    logger.debug("PR toolbar state changed", {
+      state.status === 'success' ? state.data.estimation : undefined
+    logger.debug('PR toolbar state changed', {
       status: state.status,
       checkCount,
       hasEstimation: estimation !== undefined,
       estimationBand: estimation?.band,
-    });
+    })
 
-    if (state.status === "error") {
-      logger.warn("PR toolbar rendered a recoverable error state", {
+    if (state.status === 'error') {
+      logger.warn('PR toolbar rendered a recoverable error state', {
         code: state.error.code,
-      });
+      })
     }
-  }, [state]);
+  }, [state])
 
   return (
     <section className="pr-toolbar" aria-label="MergeLens pull request toolbar">
@@ -346,15 +346,15 @@ export const PRToolbar = ({
       </div>
       <div className="pr-toolbar__content">
         <div className="pr-toolbar__state">
-          {state.status === "loading" ? <LoadingState /> : null}
-          {state.status === "unsupported-context" ? <UnsupportedState /> : null}
-          {state.status === "success" ? (
+          {state.status === 'loading' ? <LoadingState /> : null}
+          {state.status === 'unsupported-context' ? <UnsupportedState /> : null}
+          {state.status === 'success' ? (
             <SuccessState {...state} onRetry={onRetry} />
           ) : null}
-          {state.status === "error" && state.error.code === "missing-token" ? (
+          {state.status === 'error' && state.error.code === 'missing-token' ? (
             <MissingTokenState onOpenSettings={onOpenSettings} />
           ) : null}
-          {state.status === "error" && state.error.code !== "missing-token" ? (
+          {state.status === 'error' && state.error.code !== 'missing-token' ? (
             <ErrorState error={state.error} onRetry={onRetry} />
           ) : null}
         </div>
@@ -380,5 +380,5 @@ export const PRToolbar = ({
         </div>
       ) : null}
     </section>
-  );
-};
+  )
+}

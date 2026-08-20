@@ -1,37 +1,39 @@
-import { createLogger } from '@/shared/logging/logger';
-import { REVIEW_NOTIFICATION_ALARM_NAME } from '../domain/ReviewNotification';
-import type { ReviewNotificationAlarmScheduler } from '../ports/ReviewNotificationBrowser';
+import { createLogger } from '@/shared/logging/logger'
+import { REVIEW_NOTIFICATION_ALARM_NAME } from '../domain/ReviewNotification'
+import type { ReviewNotificationAlarmScheduler } from '../ports/ReviewNotificationBrowser'
 
-const logger = createLogger('reviewNotifications.scheduler');
+const logger = createLogger('reviewNotifications.scheduler')
 
-export class BrowserReviewNotificationScheduler
-implements ReviewNotificationAlarmScheduler {
+export class BrowserReviewNotificationScheduler implements ReviewNotificationAlarmScheduler {
   async getIntervalMinutes(): Promise<number | null> {
-    const alarm = await browser.alarms.get(REVIEW_NOTIFICATION_ALARM_NAME);
-    const interval = alarm?.periodInMinutes ?? null;
+    const alarm = await browser.alarms.get(REVIEW_NOTIFICATION_ALARM_NAME)
+    const interval = alarm?.periodInMinutes ?? null
     logger.debug('Read review notification alarm', {
       isScheduled: alarm !== undefined,
       intervalMinutes: interval ?? undefined,
-    });
-    return interval;
+    })
+    return interval
   }
 
   async schedule(intervalMinutes: number): Promise<void> {
-    const current = await this.getIntervalMinutes();
+    const current = await this.getIntervalMinutes()
     if (current === intervalMinutes) {
-      logger.debug('Kept existing review notification alarm', { intervalMinutes });
-      return;
+      logger.debug('Kept existing review notification alarm', {
+        intervalMinutes,
+      })
+      return
     }
-    if (current !== null) await browser.alarms.clear(REVIEW_NOTIFICATION_ALARM_NAME);
+    if (current !== null)
+      await browser.alarms.clear(REVIEW_NOTIFICATION_ALARM_NAME)
     await browser.alarms.create(REVIEW_NOTIFICATION_ALARM_NAME, {
       delayInMinutes: intervalMinutes,
       periodInMinutes: intervalMinutes,
-    });
-    logger.info('Review notification alarm scheduled', { intervalMinutes });
+    })
+    logger.info('Review notification alarm scheduled', { intervalMinutes })
   }
 
   async clear(): Promise<void> {
-    const cleared = await browser.alarms.clear(REVIEW_NOTIFICATION_ALARM_NAME);
-    logger.info('Review notification alarm cleared', { cleared });
+    const cleared = await browser.alarms.clear(REVIEW_NOTIFICATION_ALARM_NAME)
+    logger.info('Review notification alarm cleared', { cleared })
   }
 }

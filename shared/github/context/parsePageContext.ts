@@ -1,33 +1,33 @@
-import type { PullRequestPageContext } from './PageContext';
-import { createLogger } from '@/shared/logging/logger';
+import type { PullRequestPageContext } from './PageContext'
+import { createLogger } from '@/shared/logging/logger'
 
-const logger = createLogger('github.context.parsePageContext');
-const GITHUB_HOSTNAME = 'github.com';
+const logger = createLogger('github.context.parsePageContext')
+const GITHUB_HOSTNAME = 'github.com'
 
 export const parsePageContext = (
   input: string | URL,
 ): PullRequestPageContext | null => {
-  let url: URL;
+  let url: URL
 
   try {
-    url = input instanceof URL ? input : new URL(input);
+    url = input instanceof URL ? input : new URL(input)
   } catch {
-    logger.warn('Rejected malformed URL');
-    return null;
+    logger.warn('Rejected malformed URL')
+    return null
   }
 
   if (url.protocol !== 'https:' || url.hostname !== GITHUB_HOSTNAME) {
     logger.warn('Rejected unsupported origin', {
       protocol: url.protocol,
       hostname: url.hostname,
-    });
-    return null;
+    })
+    return null
   }
 
   const [owner, repository, resource, pullNumberSegment] = url.pathname
     .split('/')
-    .filter(Boolean);
-  const pullNumber = Number(pullNumberSegment);
+    .filter(Boolean)
+  const pullNumber = Number(pullNumberSegment)
 
   if (
     !owner ||
@@ -38,8 +38,8 @@ export const parsePageContext = (
   ) {
     logger.debug('URL does not identify a pull request', {
       pathname: url.pathname,
-    });
-    return null;
+    })
+    return null
   }
 
   const context: PullRequestPageContext = {
@@ -48,12 +48,12 @@ export const parsePageContext = (
     repository,
     pullNumber,
     url: url.toString(),
-  };
+  }
 
   logger.debug('Parsed pull request context', {
     owner,
     repository,
     pullNumber,
-  });
-  return context;
-};
+  })
+  return context
+}

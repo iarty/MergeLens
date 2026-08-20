@@ -2,18 +2,20 @@ import type {
   PullRequestEstimationHeuristics,
   PullRequestEstimationInput,
   PullRequestEstimationResult,
-} from '../domain/PullRequestEstimation';
+} from '../domain/PullRequestEstimation'
 
-export type PullRequestEstimationHeuristicsOverrides =
-  Omit<Partial<PullRequestEstimationHeuristics>, 'weights' | 'thresholds'> & {
-    weights?: Partial<PullRequestEstimationHeuristics['weights']>;
-    thresholds?: Partial<PullRequestEstimationHeuristics['thresholds']>;
-  };
+export type PullRequestEstimationHeuristicsOverrides = Omit<
+  Partial<PullRequestEstimationHeuristics>,
+  'weights' | 'thresholds'
+> & {
+  weights?: Partial<PullRequestEstimationHeuristics['weights']>
+  thresholds?: Partial<PullRequestEstimationHeuristics['thresholds']>
+}
 
 export interface EstimatePullRequestInput extends PullRequestEstimationInput {
-  heuristics?: PullRequestEstimationHeuristicsOverrides;
+  heuristics?: PullRequestEstimationHeuristicsOverrides
 }
 
 export type EstimatePullRequest = (
   input: EstimatePullRequestInput,
-) => PullRequestEstimationResult;
+) => PullRequestEstimationResult

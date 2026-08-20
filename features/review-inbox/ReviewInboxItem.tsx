@@ -1,17 +1,18 @@
-import type { ReviewInboxPullRequest } from '@/modules/pull-requests';
+import type { ReviewInboxPullRequest } from '@/modules/pull-requests'
 
-const REASON_LABELS: Record<ReviewInboxPullRequest['reasons'][number], string> = {
-  assigned: 'Assigned',
-  'recent-activity': 'Active',
-  'review-requested': 'Review requested',
-};
+const REASON_LABELS: Record<ReviewInboxPullRequest['reasons'][number], string> =
+  {
+    assigned: 'Assigned',
+    'recent-activity': 'Active',
+    'review-requested': 'Review requested',
+  }
 
 const formatUpdatedAt = (updatedAt: string): string => {
   return new Intl.DateTimeFormat('en', {
     month: 'short',
     day: 'numeric',
-  }).format(new Date(updatedAt));
-};
+  }).format(new Date(updatedAt))
+}
 
 export const ReviewInboxItem = ({ item }: { item: ReviewInboxPullRequest }) => {
   return (
@@ -60,5 +61,5 @@ export const ReviewInboxItem = ({ item }: { item: ReviewInboxPullRequest }) => {
         </span>
       </div>
     </article>
-  );
-};
+  )
+}

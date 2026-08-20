@@ -6,7 +6,7 @@ export {
   getPortableDataConflictKey,
   parsePortableLocalData,
   portableLocalDataSchema,
-} from './domain/PortableLocalData';
+} from './domain/PortableLocalData'
 export type {
   PortableDataConflictCategory,
   PortableDataConflictDecision,
@@ -15,7 +15,7 @@ export type {
   PortableLocalData,
   PortableLocalDataPayload,
   PortableLocalDataValidationErrorCode,
-} from './domain/PortableLocalData';
+} from './domain/PortableLocalData'
 export type {
   ApplyPortableLocalDataImportInput,
   ApplyPortableLocalDataImportResult,
@@ -25,17 +25,11 @@ export type {
   PortableLocalDataErrorCode,
   PortableLocalDataImportPreview,
   PreviewPortableLocalDataImportResult,
-} from './application/contracts';
-export {
-  createExportPortableLocalData,
-} from './application/exportPortableLocalData';
-export type {
-  ExportPortableLocalDataDependencies,
-} from './application/exportPortableLocalData';
+} from './application/contracts'
+export { createExportPortableLocalData } from './application/exportPortableLocalData'
+export type { ExportPortableLocalDataDependencies } from './application/exportPortableLocalData'
 export {
   createApplyPortableLocalDataImport,
   createPreviewPortableLocalDataImport,
-} from './application/importPortableLocalData';
-export type {
-  ImportPortableLocalDataDependencies,
-} from './application/importPortableLocalData';
+} from './application/importPortableLocalData'
+export type { ImportPortableLocalDataDependencies } from './application/importPortableLocalData'

@@ -1,7 +1,7 @@
-import { buildExtension } from './extension';
+import { buildExtension } from './extension'
 
 const globalSetup = async (): Promise<void> => {
-  await buildExtension();
-};
+  await buildExtension()
+}
 
-export default globalSetup;
+export default globalSetup

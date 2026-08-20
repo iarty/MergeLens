@@ -1,32 +1,34 @@
-import { createLogger } from '@/shared/logging/logger';
-import type { SavedInboxFilter } from '../domain/WorkspacePreferences';
-import type { WorkspacePreferencesRepository } from '../ports/WorkspacePreferencesRepository';
-import type { WorkspacePreferencesResult } from './contracts';
+import { createLogger } from '@/shared/logging/logger'
+import type { SavedInboxFilter } from '../domain/WorkspacePreferences'
+import type { WorkspacePreferencesRepository } from '../ports/WorkspacePreferencesRepository'
+import type { WorkspacePreferencesResult } from './contracts'
 import {
   getWorkspacePreferencesErrorName,
   isExpectedWorkspacePreferencesError,
   toWorkspacePreferencesError,
-} from './operation';
+} from './operation'
 
-const logger = createLogger('workspacePreferences.listSavedFilters');
+const logger = createLogger('workspacePreferences.listSavedFilters')
 
 export const createListSavedFilters =
   (repository: WorkspacePreferencesRepository) =>
   async (): Promise<WorkspacePreferencesResult<SavedInboxFilter[]>> => {
-    logger.debug('Listing saved inbox filters');
+    logger.debug('Listing saved inbox filters')
     try {
-      const filters = await repository.listSavedFilters();
-      logger.debug('Listed saved inbox filters', { filterCount: filters.length });
-      return { status: 'success', data: filters };
+      const filters = await repository.listSavedFilters()
+      logger.debug('Listed saved inbox filters', {
+        filterCount: filters.length,
+      })
+      return { status: 'success', data: filters }
     } catch (error) {
-      const mappedError = toWorkspacePreferencesError(error);
+      const mappedError = toWorkspacePreferencesError(error)
       const log = isExpectedWorkspacePreferencesError(error)
         ? logger.warn
-        : logger.error;
+        : logger.error
       log('Failed to list saved inbox filters', {
         code: mappedError.code,
         errorName: getWorkspacePreferencesErrorName(error),
-      });
-      return { status: 'error', error: mappedError };
+      })
+      return { status: 'error', error: mappedError }
     }
-  };
+  }

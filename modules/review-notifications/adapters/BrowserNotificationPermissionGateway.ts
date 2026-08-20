@@ -1,24 +1,23 @@
-import { createLogger } from '@/shared/logging/logger';
-import type { ReviewNotificationPermissionGateway } from '../ports/ReviewNotificationBrowser';
+import { createLogger } from '@/shared/logging/logger'
+import type { ReviewNotificationPermissionGateway } from '../ports/ReviewNotificationBrowser'
 
-const logger = createLogger('reviewNotifications.permission');
+const logger = createLogger('reviewNotifications.permission')
 const notificationPermission: Browser.permissions.Permissions = {
   permissions: ['notifications'],
-};
+}
 
-export class BrowserNotificationPermissionGateway
-implements ReviewNotificationPermissionGateway {
+export class BrowserNotificationPermissionGateway implements ReviewNotificationPermissionGateway {
   async isGranted(): Promise<boolean> {
-    const granted = await browser.permissions.contains(notificationPermission);
-    logger.debug('Resolved review notification permission', { granted });
-    return granted;
+    const granted = await browser.permissions.contains(notificationPermission)
+    logger.debug('Resolved review notification permission', { granted })
+    return granted
   }
 
   async request(): Promise<boolean> {
-    logger.info('Requesting optional review notification permission');
-    const granted = await browser.permissions.request(notificationPermission);
-    const log = granted ? logger.info : logger.warn;
-    log('Review notification permission request completed', { granted });
-    return granted;
+    logger.info('Requesting optional review notification permission')
+    const granted = await browser.permissions.request(notificationPermission)
+    const log = granted ? logger.info : logger.warn
+    log('Review notification permission request completed', { granted })
+    return granted
   }
 }

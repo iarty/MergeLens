@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest'
 import {
   isReceiverUnavailableError,
   parseReviewInboxRequest,
@@ -7,8 +7,8 @@ import {
   parseQuickLinksResponse,
   parseToolbarRequest,
   parseToolbarResponse,
-} from '@/shared/messaging/protocol';
-import type { MergeLensProtocolMap } from '@/shared/messaging/protocol';
+} from '@/shared/messaging/protocol'
+import type { MergeLensProtocolMap } from '@/shared/messaging/protocol'
 
 const request = {
   correlationId: 'request-1',
@@ -19,19 +19,19 @@ const request = {
     pullNumber: 42,
     url: 'https://github.com/openai/codex/pull/42',
   },
-};
+}
 
 describe('PR toolbar messaging protocol', () => {
   it('defines a typed options-page command response', () => {
     const response: ReturnType<MergeLensProtocolMap['openOptionsPage']> = {
       status: 'success',
-    };
+    }
 
-    expect(response).toEqual({ status: 'success' });
-  });
+    expect(response).toEqual({ status: 'success' })
+  })
   it('validates a safe toolbar request', () => {
-    expect(parseToolbarRequest(request)).toEqual(request);
-  });
+    expect(parseToolbarRequest(request)).toEqual(request)
+  })
 
   it('rejects malformed request data', () => {
     expect(() =>
@@ -39,8 +39,8 @@ describe('PR toolbar messaging protocol', () => {
         ...request,
         context: { ...request.context, pullNumber: 0 },
       }),
-    ).toThrow('Invalid PR toolbar request');
-  });
+    ).toThrow('Invalid PR toolbar request')
+  })
 
   it('validates a normalized success response', () => {
     const response = {
@@ -57,38 +57,51 @@ describe('PR toolbar messaging protocol', () => {
         checks: [],
         actionsUrl: 'https://github.com/openai/codex/actions',
       },
-    };
+    }
 
-    expect(parseToolbarResponse(response)).toEqual(response);
-  });
+    expect(parseToolbarResponse(response)).toEqual(response)
+  })
 
   it('identifies common missing receiver errors', () => {
     expect(
       isReceiverUnavailableError(
-        new Error('Could not establish connection. Receiving end does not exist.'),
+        new Error(
+          'Could not establish connection. Receiving end does not exist.',
+        ),
       ),
-    ).toBe(true);
-    expect(isReceiverUnavailableError(new Error('Network request failed'))).toBe(false);
-  });
+    ).toBe(true)
+    expect(
+      isReceiverUnavailableError(new Error('Network request failed')),
+    ).toBe(false)
+  })
 
   it('validates quick links messages and rejects unsafe URLs', () => {
-    expect(parseQuickLinksRequest(request)).toEqual(request);
-    expect(parseQuickLinksResponse({
-      status: 'success',
-      correlationId: 'quick-1',
-      data: { deployments: [], configuredLinks: [] },
-    })).toMatchObject({ status: 'success', correlationId: 'quick-1' });
-    expect(() => parseQuickLinksResponse({
-      status: 'success',
-      correlationId: 'quick-1',
-      data: { deployments: [], configuredLinks: [{ id: 'bad', label: 'Bad', url: 'javascript:alert(1)' }] },
-    })).toThrow('Invalid quick links response');
-  });
+    expect(parseQuickLinksRequest(request)).toEqual(request)
+    expect(
+      parseQuickLinksResponse({
+        status: 'success',
+        correlationId: 'quick-1',
+        data: { deployments: [], configuredLinks: [] },
+      }),
+    ).toMatchObject({ status: 'success', correlationId: 'quick-1' })
+    expect(() =>
+      parseQuickLinksResponse({
+        status: 'success',
+        correlationId: 'quick-1',
+        data: {
+          deployments: [],
+          configuredLinks: [
+            { id: 'bad', label: 'Bad', url: 'javascript:alert(1)' },
+          ],
+        },
+      }),
+    ).toThrow('Invalid quick links response')
+  })
 
   it('validates a review inbox request and partial response', () => {
     expect(parseReviewInboxRequest({ correlationId: 'inbox-1' })).toEqual({
       correlationId: 'inbox-1',
-    });
+    })
 
     const response = {
       status: 'success' as const,
@@ -101,21 +114,21 @@ describe('PR toolbar messaging protocol', () => {
         },
         recentActivity: { status: 'success' as const, items: [] },
       },
-    };
+    }
 
-    expect(parseReviewInboxResponse(response)).toEqual(response);
-  });
+    expect(parseReviewInboxResponse(response)).toEqual(response)
+  })
 
   it('rejects malformed review inbox data', () => {
     expect(() => parseReviewInboxRequest({ correlationId: '' })).toThrow(
       'Invalid review inbox request',
-    );
+    )
     expect(() =>
       parseReviewInboxResponse({
         status: 'success',
         correlationId: 'inbox-1',
         data: { reviewRequests: null },
       }),
-    ).toThrow('Invalid review inbox response');
-  });
-});
+    ).toThrow('Invalid review inbox response')
+  })
+})

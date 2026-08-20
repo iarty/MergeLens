@@ -1,6 +1,6 @@
-import { createLogger } from '@/shared/logging/logger';
+import { createLogger } from '@/shared/logging/logger'
 
-const logger = createLogger('github.dom.selectors');
+const logger = createLogger('github.dom.selectors')
 
 export const PR_TOOLBAR_ANCHOR_SELECTORS = [
   '#diff-comparison-viewer-container',
@@ -9,23 +9,27 @@ export const PR_TOOLBAR_ANCHOR_SELECTORS = [
   '.gh-header-meta',
   '[data-component="SplitPageLayout.Header"]',
   '[data-component="PageHeader"]:has(h1)',
-] as const;
+] as const
 
 export const resolvePullRequestToolbarAnchorSelector = (
   root: ParentNode = document,
 ): string | null => {
-  return PR_TOOLBAR_ANCHOR_SELECTORS.find((selector) => root.querySelector(selector)) ?? null;
-};
+  return (
+    PR_TOOLBAR_ANCHOR_SELECTORS.find((selector) =>
+      root.querySelector(selector),
+    ) ?? null
+  )
+}
 
 export const findPullRequestToolbarAnchor = (
   root: ParentNode = document,
 ): Element | null => {
-  const selector = resolvePullRequestToolbarAnchorSelector(root);
+  const selector = resolvePullRequestToolbarAnchorSelector(root)
   if (selector) {
-    logger.debug('Resolved PR toolbar anchor', { selector });
-    return root.querySelector(selector);
+    logger.debug('Resolved PR toolbar anchor', { selector })
+    return root.querySelector(selector)
   }
 
-  logger.warn('PR toolbar anchor is unavailable');
-  return null;
-};
+  logger.warn('PR toolbar anchor is unavailable')
+  return null
+}
