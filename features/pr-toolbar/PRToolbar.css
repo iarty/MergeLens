@@ -16,8 +16,7 @@
   border-radius: 6px;
   background: #ffffff;
   color: #1f2328;
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 13px;
   letter-spacing: 0;
   line-height: 1.4;
@@ -86,18 +85,40 @@
   text-transform: capitalize;
 }
 
-.pr-toolbar__estimate-band--low { background: #1a7f37; }
-.pr-toolbar__estimate-band--medium { background: #9a6700; }
+.pr-toolbar__estimate-band--low {
+  background: #1a7f37;
+}
+.pr-toolbar__estimate-band--medium {
+  background: #9a6700;
+}
 .pr-toolbar__estimate-band--high,
-.pr-toolbar__estimate-band--critical { background: #cf222e; }
-.pr-toolbar__estimate-score { font-weight: 600; color: #1f2328; }
-.pr-toolbar__estimate-drivers { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pr-toolbar__estimate-uncertain { color: #9a6700; font-weight: 600; }
+.pr-toolbar__estimate-band--critical {
+  background: #cf222e;
+}
+.pr-toolbar__estimate-score {
+  font-weight: 600;
+  color: #1f2328;
+}
+.pr-toolbar__estimate-drivers {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pr-toolbar__estimate-uncertain {
+  color: #9a6700;
+  font-weight: 600;
+}
 
 @media (max-width: 720px) {
-  .pr-toolbar__success { grid-template-columns: minmax(0, 1fr) auto; }
-  .pr-toolbar__checks { grid-column: 1 / -1; }
-  .pr-toolbar__estimation { grid-column: 1 / -1; }
+  .pr-toolbar__success {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .pr-toolbar__checks {
+    grid-column: 1 / -1;
+  }
+  .pr-toolbar__estimation {
+    grid-column: 1 / -1;
+  }
 }
 
 .pr-toolbar__message > span:nth-child(2) {
@@ -167,7 +188,6 @@
 }
 
 .pr-toolbar__button,
-.pr-toolbar__actions-link,
 .pr-toolbar__notes-button {
   min-height: 28px;
   border: 1px solid #d0d7de;
@@ -184,7 +204,6 @@
 }
 
 .pr-toolbar__button:hover,
-.pr-toolbar__actions-link:hover,
 .pr-toolbar__notes-button:hover {
   background: #f3f4f6;
 }
@@ -271,7 +290,6 @@
 }
 
 .pr-toolbar__button:focus-visible,
-.pr-toolbar__actions-link:focus-visible,
 .pr-toolbar__notes-button:focus-visible,
 .pr-toolbar__title:focus-visible,
 .pr-toolbar__check:focus-visible,
@@ -334,8 +352,7 @@
 }
 
 .pr-toolbar__title:hover,
-.pr-toolbar__check:hover,
-.pr-toolbar__actions-link:hover {
+.pr-toolbar__check:hover {
   color: #0969da;
 }
 
